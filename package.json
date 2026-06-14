@@ -1,0 +1,37 @@
+{
+  "name": "synthex-holding-website",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "node scripts/serve-static.mjs",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/**/*.test.ts",
+    "browser:verify": "node scripts/verify-browser.mjs",
+    "hydration:verify": "node scripts/verify-hydration.mjs",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build && npm run browser:verify && npm run hydration:verify"
+  },
+  "dependencies": {
+    "@react-three/fiber": "9.6.1",
+    "next": "16.2.9",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "three": "0.184.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "0.184.1",
+    "eslint": "^9.39.1",
+    "eslint-config-next": "16.2.9",
+    "playwright-core": "1.60.0",
+    "tsx": "^4.21.0",
+    "typescript": "6.0.3"
+  },
+  "overrides": {
+    "postcss": "^8.5.10"
+  }
+}

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-company="holding" data-active-section="holding">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Low-fidelity Phase 1 structural prototype for the SYNTHEX Holding website.">
+  <title>SYNTHEX Phase 1 Structural Prototype</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="state-model.js" defer></script>
+  <script src="prototype.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#holding">Skip to content</a>
+
+  <header class="navbar" data-navbar data-company="holding">
+    <div class="navbar__inner">
+      <div class="brand-block">
+        <span class="brand-block__parent">SYNTHEX / Holding system</span>
+        <strong class="brand-block__company" data-company-label>SYNTHEX Holding</strong>
+      </div>
+      <nav class="context-links" data-context-links aria-label="Context navigation"></nav>
+      <button class="locale-toggle" type="button" data-locale-toggle>AR</button>
+      <a class="nav-cta" href="#contact" data-context-cta data-nav-target="contact">Start a conversation</a>
+    </div>
+  </header>
+
+  <span class="prototype-flag">Phase 1 wireframe / no final copy or art</span>
+
+  <main>
+    <section class="section is-active" id="holding" data-section="holding" data-index="01 / HOLDING HERO">
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow" data-lang="en">Parent identity / opening proposition</p>
+          <p class="eyebrow" data-lang="ar" hidden>الهوية الرئيسية / الرسالة الافتتاحية</p>
+          <h1 tabindex="-1" data-lang="en">One holding system. Four operating worlds.</h1>
+          <h1 tabindex="-1" data-lang="ar" hidden>منظومة قابضة واحدة. أربعة مجالات تشغيل.</h1>
+          <p class="lead" data-lang="en">Structural copy only. Final executive positioning requires the approved corporate profile.</p>
+          <p class="lead" data-lang="ar" hidden>نص هيكلي فقط. يلزم توفير النص العربي المعتمد والملف التعريفي الرسمي.</p>
+          <div class="actions">
+            <a class="button" href="#companies" data-nav-target="companies" data-lang="en">Explore the companies</a>
+            <a class="button" href="#companies" data-nav-target="companies" data-lang="ar" hidden>استكشف الشركات</a>
+            <a class="button button--secondary" href="#overview" data-nav-target="overview" data-lang="en">Understand the holding</a>
+            <a class="button button--secondary" href="#overview" data-nav-target="overview" data-lang="ar" hidden>تعرّف على الشركة القابضة</a>
+          </div>
+        </div>
+        <div class="scene-placeholder" aria-label="Holding 3D scene placeholder">
+          <span>Scene 01 / molecular holding core / tiered WebGL</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section selector-section" id="companies" data-section="companies" data-index="02 / COMPANY SELECTOR">
+      <div class="selector-head">
+        <div>
+          <p class="section-kicker" data-lang="en">Four operating arms</p>
+          <p class="section-kicker" data-lang="ar" hidden>أربعة أذرع تشغيلية</p>
+          <h2 tabindex="-1" data-lang="en">Choose a business world</h2>
+          <h2 tabindex="-1" data-lang="ar" hidden>اختر مجال العمل</h2>
+        </div>
+        <p data-lang="en">Arrow keys move between company links. Enter follows the selected deep link. The final selector will add spatial depth without hiding native links.</p>
+        <p data-lang="ar" hidden>يمكن التنقل بين روابط الشركات باستخدام الأسهم. سيضيف التصميم النهائي عمقاً بصرياً مع الحفاظ على الروابط الأساسية.</p>
+      </div>
+
+      <nav class="company-selector" data-company-selector aria-label="SYNTHEX companies">
+        <a class="company-option" href="#jollaq" data-company-option="jollaq">
+          <span class="company-option__number">01 / COMMODITIES</span>
+          <strong>JOLLAQ</strong>
+          <small data-lang="en">Strategic commodities and essential supply</small>
+          <small data-lang="ar" hidden>السلع الاستراتيجية والتوريد الأساسي</small>
+        </a>
+        <a class="company-option" href="#al-maria" data-company-option="al-maria" tabindex="-1">
+          <span class="company-option__number">02 / INSTITUTIONAL</span>
+          <strong>Al Maria</strong>
+          <small data-lang="en">Government contracts and international trade</small>
+          <small data-lang="ar" hidden>العقود الحكومية والتجارة الدولية</small>
+        </a>
+        <a class="company-option" href="#industrial" data-company-option="industrial" tabindex="-1">
+          <span class="company-option__number">03 / INDUSTRIAL</span>
+          <strong>SYNTHEX Industrial</strong>
+          <small data-lang="en">Materials, chemicals, and manufacturing</small>
+          <small data-lang="ar" hidden>المواد والكيماويات والتصنيع</small>
+        </a>
+        <a class="company-option" href="#shamco" data-company-option="shamco" tabindex="-1">
+          <span class="company-option__number">04 / DISTRIBUTION</span>
+          <strong>SHAMCO LLC</strong>
+          <small data-lang="en">Domestic logistics and distribution</small>
+          <small data-lang="ar" hidden>الخدمات اللوجستية والتوزيع المحلي</small>
+        </a>
+      </nav>
+    </section>
+
+    <section class="section" id="overview" data-section="overview" data-index="03 / HOLDING OVERVIEW">
+      <p class="section-kicker" data-lang="en">Holding structure</p>
+      <p class="section-kicker" data-lang="ar" hidden>هيكل الشركة القابضة</p>
+      <h2 tabindex="-1" data-lang="en">A connected operating model</h2>
+      <h2 tabindex="-1" data-lang="ar" hidden>نموذج تشغيلي مترابط</h2>
+      <div class="wire-cards">
+        <article class="wire-card"><h3 data-lang="en">Strategic supply</h3><h3 data-lang="ar" hidden>التوريد الاستراتيجي</h3><p>JOLLAQ</p></article>
+        <article class="wire-card"><h3 data-lang="en">Institutional trade</h3><h3 data-lang="ar" hidden>التجارة المؤسساتية</h3><p>Al Maria</p></article>
+        <article class="wire-card"><h3 data-lang="en">Industrial capability</h3><h3 data-lang="ar" hidden>القدرات الصناعية</h3><p>SYNTHEX Industrial</p></article>
+        <article class="wire-card"><h3 data-lang="en">Market distribution</h3><h3 data-lang="ar" hidden>التوزيع في السوق</h3><p>SHAMCO LLC</p></article>
+      </div>
+    </section>
+
+    <section class="section" id="story" data-section="story" data-index="04 / STORY">
+      <p class="section-kicker" data-lang="en">Timeline structure</p>
+      <p class="section-kicker" data-lang="ar" hidden>هيكل الخط الزمني</p>
+      <h2 tabindex="-1" data-lang="en">Experience, milestones, expansion</h2>
+      <h2 tabindex="-1" data-lang="ar" hidden>خبرة ومحطات وتوسع</h2>
+      <div class="timeline">
+        <article class="timeline__item"><strong>35+</strong><p data-lang="en">Verification required: starting year and applicable legal entity.</p><p data-lang="ar" hidden>يتطلب التحقق من سنة البداية والكيان القانوني المعني.</p></article>
+        <article class="timeline__item"><strong>2012</strong><p data-lang="en">Verification required: phosphate milestone and approved disclosure.</p><p data-lang="ar" hidden>يتطلب التحقق من محطة الفوسفات والمعلومات المسموح بنشرها.</p></article>
+        <article class="timeline__item"><strong data-lang="en">Current</strong><strong data-lang="ar" hidden>حالياً</strong><p data-lang="en">Verification required: paint manufacturing project stage and location.</p><p data-lang="ar" hidden>يتطلب التحقق من مرحلة مشروع تصنيع الدهانات وموقعه.</p></article>
+      </div>
+    </section>
+
+    <section class="section" id="principles" data-section="principles" data-index="05 / VISION, MISSION, VALUES">
+      <p class="section-kicker" data-lang="en">Content dependency</p>
+      <p class="section-kicker" data-lang="ar" hidden>محتوى مطلوب</p>
+      <h2 tabindex="-1" data-lang="en">Corporate principles require approved source text</h2>
+      <h2 tabindex="-1" data-lang="ar" hidden>تتطلب المبادئ المؤسسية نصوصاً معتمدة</h2>
+      <div class="wire-cards">
+        <article class="wire-card"><h3 data-lang="en">Vision</h3><h3 data-lang="ar" hidden>الرؤية</h3><p class="missing-note">MISSING / مطلوب</p></article>
+        <article class="wire-card"><h3 data-lang="en">Mission</h3><h3 data-lang="ar" hidden>الرسالة</h3><p class="missing-note">MISSING / مطلوب</p></article>
+        <article class="wire-card"><h3 data-lang="en">Values</h3><h3 data-lang="ar" hidden>القيم</h3><p class="missing-note">MISSING / مطلوب</p></article>
+      </div>
+    </section>
+
+    <section class="section company-section" id="jollaq" data-section="jollaq" data-index="06 / JOLLAQ WORLD">
+      <div class="company-grid">
+        <div class="company-copy">
+          <p class="section-kicker">JOLLAQ / SYNTHEX Holding</p>
+          <h2 tabindex="-1" data-lang="en">Strategic commodities and essential supply</h2>
+          <h2 tabindex="-1" data-lang="ar" hidden>السلع الاستراتيجية والتوريد الأساسي</h2>
+          <p data-lang="en">Structural overview based on the supplied prompt. Final claims and legal wording remain pending.</p>
+          <p data-lang="ar" hidden>نظرة هيكلية مبنية على المعلومات المتاحة. لا يزال اعتماد الادعاءات والصياغة القانونية مطلوباً.</p>
+          <div class="capability-list" id="jollaq-capabilities">
+            <div class="capability"><span data-lang="en">Wheat / corn / barley</span><span data-lang="ar" hidden>القمح / الذرة / الشعير</span></div>
+            <div class="capability"><span data-lang="en">Coffee / sugar / canned food categories</span><span data-lang="ar" hidden>القهوة / السكر / فئات الأغذية المعلبة</span></div>
+            <div class="capability"><span data-lang="en">Petroleum derivatives / verification required</span><span data-lang="ar" hidden>المشتقات النفطية / يتطلب التحقق</span></div>
+            <div class="capability"><span data-lang="en">Aluminum profiles</span><span data-lang="ar" hidden>مقاطع الألمنيوم</span></div>
+          </div>
+          <div class="proof-block" id="jollaq-network"><span data-lang="en">Proof module missing: provide one verified supply or contract story.</span><span data-lang="ar" hidden>وحدة الإثبات غير متوفرة: يلزم تقديم قصة توريد أو عقد موثقة.</span></div>
+        </div>
+        <div class="company-scene-stack">
+          <div class="scene-placeholder"><span>Scene 02 / commodity particles + cargo flow</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section company-section" id="al-maria" data-section="al-maria" data-index="07 / AL MARIA WORLD">
+      <div class="company-grid">
+        <div class="company-copy">
+          <p class="section-kicker">Al Maria / SYNTHEX Holding</p>
+          <h2 tabindex="-1" data-lang="en">Institutional supply and international trade</h2>
+          <h2 tabindex="-1" data-lang="ar" hidden>التوريد المؤسساتي والتجارة الدولية</h2>
+          <p data-lang="en">Public-sector and contract claims remain explicitly marked for verification.</p>
+          <p data-lang="ar" hidden>لا تزال ادعاءات القطاع العام والعقود محددة بوضوح على أنها بحاجة إلى التحقق.</p>
+          <div class="capability-list" id="al-maria-capabilities">
+            <div class="capability"><span data-lang="en">Government and institutional supply / verification required</span><span data-lang="ar" hidden>التوريد الحكومي والمؤسساتي / يتطلب التحقق</span></div>
+            <div class="capability"><span data-lang="en">International procurement and trade</span><span data-lang="ar" hidden>المشتريات والتجارة الدولية</span></div>
+            <div class="capability"><span data-lang="en">Edible oils</span><span data-lang="ar" hidden>الزيوت الغذائية</span></div>
+            <div class="capability"><span data-lang="en">Phosphate exports / verification required</span><span data-lang="ar" hidden>صادرات الفوسفات / يتطلب التحقق</span></div>
+          </div>
+          <div class="proof-block" id="al-maria-network"><span data-lang="en">Proof module missing: provide one approved institutional or trade story.</span><span data-lang="ar" hidden>وحدة الإثبات غير متوفرة: يلزم تقديم قصة مؤسساتية أو تجارية معتمدة.</span></div>
+        </div>
+        <div class="company-scene-stack">
+          <div class="scene-placeholder"><span>Scene 03 / formal planes + routes + gold linework</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section company-section" id="industrial" data-section="industrial" data-index="08 / INDUSTRIAL WORLD">
+      <div class="company-grid">
+        <div class="company-copy">
+          <p class="section-kicker">SYNTHEX Industrial / SYNTHEX Holding</p>
+          <h2 tabindex="-1" data-lang="en">Materials moving toward manufacturing</h2>
+          <h2 tabindex="-1" data-lang="ar" hidden>من المواد إلى التصنيع</h2>
+          <p data-lang="en">The paint project stage, location, and launch language require confirmation.</p>
+          <p data-lang="ar" hidden>تتطلب مرحلة مشروع الدهانات وموقعه وصياغة إطلاقه تأكيداً رسمياً.</p>
+          <div class="capability-list" id="industrial-capabilities">
+            <div class="capability"><span data-lang="en">Industrial chemicals and paint raw materials</span><span data-lang="ar" hidden>المواد الكيميائية الصناعية والمواد الأولية للدهانات</span></div>
+            <div class="capability"><span data-lang="en">Aluminum profiles</span><span data-lang="ar" hidden>مقاطع الألمنيوم</span></div>
+            <div class="capability"><span data-lang="en">Cement, rebar, billets, and steel categories</span><span data-lang="ar" hidden>الإسمنت وحديد التسليح والبيليت ومنتجات الصلب</span></div>
+            <div class="capability"><span data-lang="en">Paint manufacturing expansion / verification required</span><span data-lang="ar" hidden>التوسع في تصنيع الدهانات / يتطلب التحقق</span></div>
+          </div>
+          <div class="proof-block" id="industrial-network"><span data-lang="en">Proof module missing: provide approved project or facility material.</span><span data-lang="ar" hidden>وحدة الإثبات غير متوفرة: يلزم تقديم مواد معتمدة عن المشروع أو المنشأة.</span></div>
+        </div>
+        <div class="company-scene-stack">
+          <div class="scene-placeholder"><span>Scene 04 / metal extrusion + chemistry + paint transition</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section company-section" id="shamco" data-section="shamco" data-index="09 / SHAMCO WORLD">
+      <div class="company-grid">
+        <div class="company-copy">
+          <p class="section-kicker">SHAMCO LLC / SYNTHEX Holding</p>
+          <h2 tabindex="-1" data-lang="en">Distribution from holding network to market</h2>
+          <h2 tabindex="-1" data-lang="ar" hidden>التوزيع من شبكة الشركة القابضة إلى السوق</h2>
+          <p data-lang="en">Nationwide coverage and network size require evidence before publication.</p>
+          <p data-lang="ar" hidden>تتطلب التغطية على مستوى البلاد وحجم الشبكة أدلة قبل النشر.</p>
+          <div class="capability-list" id="shamco-capabilities">
+            <div class="capability"><span data-lang="en">Domestic logistics</span><span data-lang="ar" hidden>الخدمات اللوجستية المحلية</span></div>
+            <div class="capability"><span data-lang="en">Agent and distributor network / verification required</span><span data-lang="ar" hidden>شبكة الوكلاء والموزعين / تتطلب التحقق</span></div>
+            <div class="capability"><span data-lang="en">Food, commercial, and industrial distribution</span><span data-lang="ar" hidden>توزيع المنتجات الغذائية والتجارية والصناعية</span></div>
+          </div>
+          <div class="proof-block" id="shamco-network"><span data-lang="en">Proof module missing: provide approved warehouse, route, or network evidence.</span><span data-lang="ar" hidden>وحدة الإثبات غير متوفرة: يلزم تقديم أدلة معتمدة عن المستودعات أو المسارات أو الشبكة.</span></div>
+        </div>
+        <div class="company-scene-stack">
+          <div class="scene-placeholder"><span>Scene 05 / warehouse nodes + route pulses</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="network" data-section="network" data-index="10 / UNIFIED HOLDING">
+      <div class="holding-grid">
+        <div>
+          <p class="section-kicker" data-lang="en">Return to the parent system</p>
+          <p class="section-kicker" data-lang="ar" hidden>العودة إلى المنظومة الرئيسية</p>
+          <h2 tabindex="-1" data-lang="en">Four capabilities reconnect</h2>
+          <h2 tabindex="-1" data-lang="ar" hidden>تتكامل أربع قدرات</h2>
+          <p data-lang="en">The conclusion restores SYNTHEX Holding as the primary identity and explains the relationship between the operating companies.</p>
+          <p data-lang="ar" hidden>تعيد الخاتمة SYNTHEX Holding إلى الواجهة وتوضح العلاقة بين الشركات التشغيلية.</p>
+        </div>
+        <div class="network-diagram" aria-label="Unified holding network wireframe">
+          <div class="network-node">JOLLAQ</div>
+          <div class="network-node">Al Maria</div>
+          <div class="network-node">Industrial</div>
+          <div class="network-node">SHAMCO</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="contact" data-section="contact" data-index="11 / PARTNERSHIP CTA">
+      <div class="contact-shell">
+        <p class="section-kicker" data-lang="en">Contact structure</p>
+        <p class="section-kicker" data-lang="ar" hidden>هيكل التواصل</p>
+        <h2 tabindex="-1" data-lang="en">A contextual route to the right company</h2>
+        <h2 tabindex="-1" data-lang="ar" hidden>مسار تواصل موجّه إلى الشركة المناسبة</h2>
+        <p data-lang="en">No form endpoint or contact details are implemented. Approved email, phone, address, privacy terms, and routing rules are missing.</p>
+        <p data-lang="ar" hidden>لم يتم تنفيذ نموذج أو بيانات تواصل. البريد والهاتف والعنوان وشروط الخصوصية وقواعد التوجيه غير متوفرة بعد.</p>
+        <p class="missing-note">CONTENT DEPENDENCY / معلومات مطلوبة</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="section footer" id="footer" data-section="footer" data-index="12 / FOOTER">
+    <div class="footer-grid">
+      <strong>SYNTHEX Holding</strong>
+      <span>Legal/contact details missing</span>
+      <a href="../blueprint.md">Read the Phase 1 blueprint</a>
+    </div>
+  </footer>
+</body>
+</html>

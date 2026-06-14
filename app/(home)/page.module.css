@@ -1,0 +1,60 @@
+.page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
+  background:
+    radial-gradient(circle at 50% 15%, rgb(19 183 198 / 18%), transparent 34rem),
+    var(--color-page);
+}
+
+.frame {
+  width: min(44rem, 100%);
+  padding: clamp(2rem, 8vw, 5rem);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+}
+
+.eyebrow {
+  color: var(--color-accent);
+  font: var(--type-label);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.frame h1 {
+  max-width: 10ch;
+  margin-block: var(--space-4);
+  font: var(--type-display-md);
+}
+
+.frame p:not(.eyebrow) {
+  max-width: 54ch;
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-block-start: var(--space-6);
+}
+
+.actions a {
+  min-width: 9rem;
+  min-height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: var(--space-4);
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.actions a:last-child {
+  background: transparent;
+  color: var(--color-text);
+}

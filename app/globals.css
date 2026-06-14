@@ -1,0 +1,222 @@
+@layer reset, tokens, base, utilities;
+
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-width: 320px;
+    max-width: 100%;
+    scroll-padding-block-start: calc(var(--nav-height) + var(--space-3));
+    background: var(--color-page);
+    overflow-x: clip;
+  }
+
+  body {
+    min-height: 100svh;
+    margin: 0;
+    max-width: 100%;
+    color: var(--color-text);
+    background: var(--color-page);
+    overflow-x: clip;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  img,
+  svg,
+  canvas {
+    display: block;
+    max-width: 100%;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    margin-block-start: 0;
+  }
+
+  a {
+    color: inherit;
+  }
+}
+
+@layer tokens {
+  :root {
+    color-scheme: dark;
+
+    --synthex-navy: #062e52;
+    --synthex-blue: #075c91;
+    --synthex-cyan: #16a8b8;
+    --synthex-orange: #f7941d;
+    --synthex-silver: #b7c4cc;
+    --synthex-graphite: #090c10;
+    --synthex-white: #f4f7f8;
+
+    --color-page: #071018;
+    --color-surface: #0d1921;
+    --color-surface-strong: #122632;
+    --color-text: var(--synthex-white);
+    --color-text-muted: #a9bac5;
+    --color-accent: var(--synthex-cyan);
+    --color-accent-secondary: var(--synthex-orange);
+    --color-metal: var(--synthex-silver);
+    --color-line: color-mix(in srgb, var(--color-accent) 28%, #33434e);
+    --color-focus: #ffd27a;
+    --color-on-accent: #061117;
+
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
+    --space-7: 3rem;
+    --space-8: 4.5rem;
+    --space-9: 6rem;
+    --space-10: 8rem;
+
+    --content-width: 78rem;
+    --nav-height: 4.75rem;
+
+    --type-label: 800 0.75rem/1.25 Arial, "Noto Sans Arabic", Tahoma, sans-serif;
+    --type-body: 400 1rem/1.65 Arial, "Noto Sans Arabic", Tahoma, sans-serif;
+    --type-body-lg: 400 clamp(1.05rem, 2vw, 1.3rem)/1.55 Arial, "Noto Sans Arabic", Tahoma, sans-serif;
+    --type-display-sm: 800 clamp(2.35rem, 6vw, 5rem)/1.02 Arial, "Noto Sans Arabic", Tahoma, sans-serif;
+    --type-display-md: 800 clamp(3rem, 8vw, 7rem)/0.98 Arial, "Noto Sans Arabic", Tahoma, sans-serif;
+
+    --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+    --duration-fast: 180ms;
+    --duration-medium: 320ms;
+  }
+
+  :root[data-company="jollaq"] {
+    --color-page: #11140e;
+    --color-surface: #1a2016;
+    --color-surface-strong: #263120;
+    --color-accent: #d2a84d;
+    --color-accent-secondary: #537441;
+    --color-metal: #d9cba3;
+    --color-on-accent: #171105;
+  }
+
+  :root[data-company="al-maria"] {
+    --color-page: #080e1d;
+    --color-surface: #11192e;
+    --color-surface-strong: #192747;
+    --color-accent: #c5a459;
+    --color-accent-secondary: #eee4ce;
+    --color-metal: #ddd7c9;
+    --color-on-accent: #141006;
+  }
+
+  :root[data-company="industrial"] {
+    --color-page: #0a0c0e;
+    --color-surface: #161a1e;
+    --color-surface-strong: #222a30;
+    --color-accent: #3b7dc0;
+    --color-accent-secondary: #dc712d;
+    --color-metal: #aab5be;
+    --color-on-accent: #070b0e;
+  }
+
+  :root[data-company="shamco"] {
+    --color-page: #061313;
+    --color-surface: #0c2121;
+    --color-surface-strong: #123030;
+    --color-accent: #2da9a3;
+    --color-accent-secondary: #68a94e;
+    --color-metal: #b7d0ce;
+    --color-on-accent: #041110;
+  }
+}
+
+@layer base {
+  body {
+    font: var(--type-body);
+    transition:
+      color var(--duration-medium) var(--ease-standard),
+      background-color var(--duration-medium) var(--ease-standard);
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 5%, transparent) 1px, transparent 1px),
+      linear-gradient(color-mix(in srgb, var(--color-accent) 5%, transparent) 1px, transparent 1px);
+    background-size: 3rem 3rem;
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 4px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    color: var(--color-text);
+  }
+
+  h1,
+  h2 {
+    letter-spacing: -0.04em;
+    overflow-wrap: anywhere;
+  }
+
+  [dir="rtl"] h1,
+  [dir="rtl"] h2 {
+    letter-spacing: 0;
+  }
+
+  p {
+    color: var(--color-text-muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}

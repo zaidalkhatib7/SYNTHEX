@@ -1,0 +1,31 @@
+﻿{
+    "input_directory":  "C:\\Users\\2zaid\\Desktop\\Parachute-tech\\Parachute Tech projects\\Synthex\\source-assets\\Synthex Website Photos",
+    "image_count":  37,
+    "total_bytes":  53631126,
+    "formats":  [
+                    {
+                        "format":  "png",
+                        "count":  24
+                    },
+                    {
+                        "format":  "jpeg",
+                        "count":  13
+                    }
+                ],
+    "orientations":  [
+                         {
+                             "orientation":  "portrait",
+                             "count":  20
+                         },
+                         {
+                             "orientation":  "landscape",
+                             "count":  13
+                         },
+                         {
+                             "orientation":  "square",
+                             "count":  4
+                         }
+                     ],
+    "exact_duplicate_groups":  0,
+    "contact_sheets":  4
+}

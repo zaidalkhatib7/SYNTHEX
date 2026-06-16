@@ -52,7 +52,7 @@
 
 @layer tokens {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
 
     --synthex-navy: #062e52;
     --synthex-blue: #075c91;
@@ -62,17 +62,19 @@
     --synthex-graphite: #090c10;
     --synthex-white: #f4f7f8;
 
-    --color-page: #071018;
-    --color-surface: #0d1921;
-    --color-surface-strong: #122632;
-    --color-text: var(--synthex-white);
-    --color-text-muted: #a9bac5;
+    --color-page: #f5f3ee;
+    --color-surface: #ffffff;
+    --color-surface-strong: #edf3f5;
+    --color-text: #102437;
+    --color-text-muted: #667786;
     --color-accent: var(--synthex-cyan);
     --color-accent-secondary: var(--synthex-orange);
     --color-metal: var(--synthex-silver);
-    --color-line: color-mix(in srgb, var(--color-accent) 28%, #33434e);
-    --color-focus: #ffd27a;
+    --color-line: #d9e3e8;
+    --color-focus: #0d7f8d;
     --color-on-accent: #061117;
+    --color-muted: var(--color-text-muted);
+    --color-bg: var(--color-page);
 
     --space-1: 0.25rem;
     --space-2: 0.5rem;
@@ -85,14 +87,16 @@
     --space-9: 6rem;
     --space-10: 8rem;
 
-    --content-width: 78rem;
+    --content-width: 80rem;
+    --max-width: var(--content-width);
     --nav-height: 4.75rem;
 
-    --type-label: 800 0.75rem/1.25 Arial, "Noto Sans Arabic", Tahoma, sans-serif;
-    --type-body: 400 1rem/1.65 Arial, "Noto Sans Arabic", Tahoma, sans-serif;
-    --type-body-lg: 400 clamp(1.05rem, 2vw, 1.3rem)/1.55 Arial, "Noto Sans Arabic", Tahoma, sans-serif;
-    --type-display-sm: 800 clamp(2.35rem, 6vw, 5rem)/1.02 Arial, "Noto Sans Arabic", Tahoma, sans-serif;
-    --type-display-md: 800 clamp(3rem, 8vw, 7rem)/0.98 Arial, "Noto Sans Arabic", Tahoma, sans-serif;
+    --font-body: "Segoe UI", Arial, "Noto Sans Arabic", Tahoma, sans-serif;
+    --type-label: 800 0.74rem/1.25 var(--font-body);
+    --type-body: 400 1rem/1.68 var(--font-body);
+    --type-body-lg: 400 clamp(1.05rem, 1.7vw, 1.22rem)/1.68 var(--font-body);
+    --type-display-sm: 850 clamp(2.35rem, 5.1vw, 4.55rem)/1.02 var(--font-body);
+    --type-display-md: 900 clamp(3.45rem, 7.8vw, 7.35rem)/0.92 var(--font-body);
 
     --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
     --duration-fast: 180ms;
@@ -100,43 +104,47 @@
   }
 
   :root[data-company="jollaq"] {
-    --color-page: #11140e;
-    --color-surface: #1a2016;
-    --color-surface-strong: #263120;
+    --color-page: #f6f3e8;
+    --color-surface: #ffffff;
+    --color-surface-strong: #f0ead8;
     --color-accent: #d2a84d;
     --color-accent-secondary: #537441;
-    --color-metal: #d9cba3;
+    --color-metal: #7f7354;
     --color-on-accent: #171105;
+    --color-line: #e3dbc7;
   }
 
   :root[data-company="al-maria"] {
-    --color-page: #080e1d;
-    --color-surface: #11192e;
-    --color-surface-strong: #192747;
+    --color-page: #f4f6fb;
+    --color-surface: #ffffff;
+    --color-surface-strong: #e9eef8;
     --color-accent: #c5a459;
-    --color-accent-secondary: #eee4ce;
-    --color-metal: #ddd7c9;
+    --color-accent-secondary: #243b63;
+    --color-metal: #6f7582;
     --color-on-accent: #141006;
+    --color-line: #dbe2ef;
   }
 
   :root[data-company="industrial"] {
-    --color-page: #0a0c0e;
-    --color-surface: #161a1e;
-    --color-surface-strong: #222a30;
+    --color-page: #f3f4f5;
+    --color-surface: #ffffff;
+    --color-surface-strong: #e8edf1;
     --color-accent: #3b7dc0;
     --color-accent-secondary: #dc712d;
-    --color-metal: #aab5be;
+    --color-metal: #63717c;
     --color-on-accent: #070b0e;
+    --color-line: #d8e0e6;
   }
 
   :root[data-company="shamco"] {
-    --color-page: #061313;
-    --color-surface: #0c2121;
-    --color-surface-strong: #123030;
+    --color-page: #eef7f5;
+    --color-surface: #ffffff;
+    --color-surface-strong: #dff0ed;
     --color-accent: #2da9a3;
     --color-accent-secondary: #68a94e;
-    --color-metal: #b7d0ce;
+    --color-metal: #607976;
     --color-on-accent: #041110;
+    --color-line: #cfe5e2;
   }
 }
 
@@ -155,9 +163,12 @@
     z-index: -1;
     pointer-events: none;
     background:
-      linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 5%, transparent) 1px, transparent 1px),
-      linear-gradient(color-mix(in srgb, var(--color-accent) 5%, transparent) 1px, transparent 1px);
-    background-size: 3rem 3rem;
+      radial-gradient(circle at 16% 12%, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent 26rem),
+      radial-gradient(circle at 86% 8%, color-mix(in srgb, var(--color-accent-secondary) 10%, transparent), transparent 24rem),
+      linear-gradient(90deg, rgba(7, 54, 95, 0.035) 1px, transparent 1px),
+      linear-gradient(rgba(7, 54, 95, 0.035) 1px, transparent 1px);
+    background-size: auto, auto, 3.5rem 3.5rem, 3.5rem 3.5rem;
+    mask-image: linear-gradient(180deg, black, rgba(0, 0, 0, 0.72));
   }
 
   ::selection {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
   useEffect,
@@ -30,8 +31,20 @@ import type {
   NavigationTarget,
   SectionId,
 } from "@/lib/types";
-import { HeroScene } from "./HeroScene";
+import { AlMariaWorld } from "./AlMariaWorld";
+import {
+  HoldingContact,
+  HoldingFooter,
+  HoldingNetwork,
+  HoldingOverview,
+  HoldingPrinciples,
+  HoldingStory,
+} from "./HoldingSections";
+import { IndustrialWorld } from "./IndustrialWorld";
+import { JollaqWorld } from "./JollaqWorld";
+import { ResponsiveSceneImage } from "./ResponsiveSceneImage";
 import { ScenePlaceholder } from "./ScenePlaceholder";
+import { ShamcoWorld } from "./ShamcoWorld";
 import styles from "./experience.module.css";
 
 interface ExperiencePageProps {
@@ -41,6 +54,67 @@ interface ExperiencePageProps {
 function localize(value: { en: string; ar: string }, locale: Locale) {
   return value[locale];
 }
+
+const heroCommandItems = [
+  {
+    code: "01",
+    label: { en: "Holding-led narrative", ar: "الهوية القابضة" },
+    text: {
+      en: "SYNTHEX anchors the experience while each operating company keeps a clear role.",
+      ar: "تتصدر SYNTHEX Holding السرد المؤسسي الرئيسي.",
+    },
+  },
+  {
+    code: "02",
+    label: { en: "Distinct operating worlds", ar: "أربعة مجالات" },
+    text: {
+      en: "Supply, institutions, industry, and distribution each carry their own visual language.",
+      ar: "لكل ذراع تشغيلي نظام بصري مستقل.",
+    },
+  },
+  {
+    code: "03",
+    label: { en: "Review-ready content", ar: "ادعاءات موثقة" },
+    text: {
+      en: "Unconfirmed legal, contact, and achievement claims remain clearly marked.",
+      ar: "تبقى الادعاءات غير المعتمدة موضحة للمراجعة.",
+    },
+  },
+];
+
+const companyPreviewAssets: Record<
+  Exclude<CompanyId, "holding">,
+  { image: string; meta: { en: string; ar: string } }
+> = {
+  jollaq: {
+    image: "/media/jollaq/jollaq-commodities-640.avif",
+    meta: {
+      en: "Commodity flow / cargo system",
+      ar: "تدفق السلع / منظومة الشحن",
+    },
+  },
+  "al-maria": {
+    image: "/media/al-maria/al-maria-trade-640.avif",
+    meta: {
+      en: "Institutional planes / trade routes",
+      ar: "مستويات مؤسسية / مسارات التجارة",
+    },
+  },
+  industrial: {
+    image: "/media/industrial/industrial-paint-640.avif",
+    meta: {
+      en: "Materials / paint manufacturing",
+      ar: "المواد / تصنيع الدهانات",
+    },
+  },
+  shamco: {
+    image: "/media/shamco/shamco-network-640.avif",
+    meta: {
+      en: "Distribution network / route system",
+      ar: "شبكة توزيع / منظومة مسارات",
+    },
+  },
+};
 
 export function ExperiencePage({ locale }: ExperiencePageProps) {
   const [state, dispatch] = useReducer(
@@ -93,6 +167,50 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
     document.documentElement.dataset.activeSection = state.activeSection;
     document.documentElement.dataset.navigationSource = state.source;
   }, [state]);
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const revealElements = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-section]:not([hidden])"),
+    );
+
+    document.documentElement.dataset.motion = reducedMotion
+      ? "reduced"
+      : "full";
+
+    revealElements.forEach((element) => {
+      element.dataset.reveal = "true";
+      if (reducedMotion) {
+        element.dataset.visible = "true";
+      }
+    });
+
+    if (reducedMotion) {
+      return;
+    }
+
+    const revealObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) {
+            return;
+          }
+
+          (entry.target as HTMLElement).dataset.visible = "true";
+          revealObserver.unobserve(entry.target);
+        });
+      },
+      {
+        rootMargin: "0px 0px -12% 0px",
+        threshold: 0.12,
+      },
+    );
+
+    revealElements.forEach((element) => revealObserver.observe(element));
+    return () => revealObserver.disconnect();
+  }, []);
 
   useEffect(() => {
     const restoreFromUrl = () => {
@@ -279,7 +397,11 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
         {locale === "ar" ? "تجاوز إلى المحتوى" : "Skip to content"}
       </a>
 
-      <header className={styles.navbar}>
+      <header
+        className={styles.navbar}
+        data-company={state.activeCompany}
+        data-navigation-source={state.source}
+      >
         <div className={styles.navbarInner}>
           <a
             className={styles.brand}
@@ -360,7 +482,7 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
           data-section
         >
           <div className={styles.heroGrid}>
-            <div>
+            <div className={styles.heroCopy}>
               <p className={styles.eyebrow}>
                 {localize(text.holdingEyebrow, locale)}
               </p>
@@ -392,14 +514,64 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
                     : "Understand the holding"}
                 </a>
               </div>
+              <div
+                className={styles.heroCommandRail}
+                aria-label={
+                  locale === "ar"
+                    ? "ملخص نظام SYNTHEX"
+                    : "SYNTHEX system summary"
+                }
+              >
+                {heroCommandItems.map((item) => (
+                  <article key={item.code}>
+                    <strong>{localize(item.label, locale)}</strong>
+                    <p>{localize(item.text, locale)}</p>
+                  </article>
+                ))}
+              </div>
             </div>
-            <HeroScene
-              label={
+            <div className={styles.heroVisualStack}>
+              <ResponsiveSceneImage
+              alt={
                 locale === "ar"
-                  ? "أساس مشهد الهوية الجزيئية"
-                  : "A molecular interpretation of the SYNTHEX holding system"
+                  ? "مجسم ثلاثي الأبعاد لهوية SYNTHEX Holding الجزيئية"
+                  : "Supplied 3D render of the SYNTHEX Holding molecular identity"
               }
-            />
+              basePath="/media/holding/synthex-holding"
+              className={styles.holdingRender}
+              eager
+              hotspots={[
+                {
+                  id: "network",
+                  label:
+                    locale === "ar"
+                      ? "شبكة جزيئية موحدة"
+                      : "Unified molecular network",
+                  x: 55,
+                  y: 31,
+                },
+                {
+                  id: "identity",
+                  label:
+                    locale === "ar"
+                      ? "هوية SYNTHEX المعدنية"
+                      : "Engineered SYNTHEX identity",
+                  x: 49,
+                  y: 53,
+                },
+                {
+                  id: "foundation",
+                  label:
+                    locale === "ar"
+                      ? "منصة الشركة القابضة"
+                      : "Holding company foundation",
+                  x: 51,
+                  y: 78,
+                },
+              ]}
+              label="SYNTHEX / SUPPLIED 3D IDENTITY"
+              />
+            </div>
           </div>
         </section>
 
@@ -430,6 +602,7 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
           >
             {companyConfigs.map((company, index) => {
               const selected = state.activeCompany === company.id;
+              const preview = companyPreviewAssets[company.id];
               return (
                 <a
                   key={company.id}
@@ -440,6 +613,11 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
                   data-company={company.id}
                   href={`#${company.id}`}
                   aria-current={selected ? "location" : undefined}
+                  style={
+                    {
+                      "--company-preview-image": `url(${preview.image})`,
+                    } as CSSProperties
+                  }
                   tabIndex={selected || state.activeCompany === "holding" && index === 0 ? 0 : -1}
                   onBlur={() => setPreviewCompany("none")}
                   onClick={(event) =>
@@ -449,12 +627,15 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
                   onMouseEnter={() => setPreviewCompany(company.id)}
                   onMouseLeave={() => setPreviewCompany("none")}
                 >
-                  <span className={styles.companyIndex}>0{index + 1}</span>
+                  <span className={styles.companyPreviewArt} aria-hidden="true" />
                   <span className={styles.companyPortal} aria-hidden="true">
                     <i />
                     <i />
                     <i />
                     <b />
+                  </span>
+                  <span className={styles.companySignal}>
+                    {localize(preview.meta, locale)}
                   </span>
                   <strong>{company.displayName}</strong>
                   <small>{localize(company.eyebrow, locale)}</small>
@@ -464,7 +645,11 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
           </nav>
         </section>
 
-        <section className={styles.section} id="overview" data-section>
+        <HoldingOverview locale={locale} />
+        <HoldingStory locale={locale} />
+        <HoldingPrinciples locale={locale} />
+
+        <section hidden className={styles.section} id="overview-legacy">
           <p className={styles.eyebrow}>
             {locale === "ar" ? "نموذج الشركة القابضة" : "Holding model"}
           </p>
@@ -480,7 +665,7 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
           </div>
         </section>
 
-        <section className={styles.section} id="story" data-section>
+        <section hidden className={styles.section} id="story-legacy">
           <p className={styles.eyebrow}>
             {locale === "ar" ? "المسيرة" : "Holding story"}
           </p>
@@ -513,7 +698,7 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
           </div>
         </section>
 
-        <section className={styles.section} id="principles" data-section>
+        <section hidden className={styles.section} id="principles-legacy">
           <p className={styles.eyebrow}>
             {locale === "ar" ? "اعتماد المحتوى" : "Content dependency"}
           </p>
@@ -532,13 +717,38 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
           </div>
         </section>
 
-        {companyConfigs.map((company) => (
-          <section
-            className={`${styles.section} ${styles.companySection}`}
-            id={company.id}
-            key={company.id}
-            data-section
-          >
+        {companyConfigs.map((company) =>
+          company.id === "jollaq" ? (
+            <JollaqWorld
+              company={company}
+              key={company.id}
+              locale={locale}
+            />
+          ) : company.id === "al-maria" ? (
+            <AlMariaWorld
+              company={company}
+              key={company.id}
+              locale={locale}
+            />
+          ) : company.id === "industrial" ? (
+            <IndustrialWorld
+              company={company}
+              key={company.id}
+              locale={locale}
+            />
+          ) : company.id === "shamco" ? (
+            <ShamcoWorld
+              company={company}
+              key={company.id}
+              locale={locale}
+            />
+          ) : (
+            <section
+              className={`${styles.section} ${styles.companySection}`}
+              id={company.id}
+              key={company.id}
+              data-section
+            >
             <div className={styles.companyGrid}>
               <div>
                 <p className={styles.eyebrow}>
@@ -587,10 +797,14 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
                 />
               </div>
             </div>
-          </section>
-        ))}
+            </section>
+          ),
+        )}
 
-        <section className={styles.section} id="network" data-section>
+        <HoldingNetwork locale={locale} />
+        <HoldingContact locale={locale} />
+
+        <section hidden className={styles.section} id="network-legacy">
           <div className={styles.networkGrid}>
             <div>
               <p className={styles.eyebrow}>
@@ -614,7 +828,7 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
           </div>
         </section>
 
-        <section className={styles.section} id="contact" data-section>
+        <section hidden className={styles.section} id="contact-legacy">
           <div className={styles.contactPanel}>
             <p className={styles.eyebrow}>
               {locale === "ar" ? "هيكل التواصل" : "Contact structure"}
@@ -632,7 +846,8 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
         </section>
       </main>
 
-      <footer className={styles.footer} id="footer" data-section>
+      <HoldingFooter locale={locale} />
+      <footer hidden className={styles.footer} id="footer-legacy">
         <strong>{text.holdingName}</strong>
         <p>
           {locale === "ar"

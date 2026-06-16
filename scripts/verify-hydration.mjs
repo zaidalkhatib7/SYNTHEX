@@ -151,47 +151,93 @@ try {
   page.on("pageerror", (error) => errors.push(error.message));
 
   await page.addInitScript(() => {
+    const applyExtensionHeadScript = () => {
+      if (!document.head) {
+        return false;
+      }
+
+      if (window.__synthexExtensionScriptInjected === true) {
+        return true;
+      }
+
+      if (
+        document.querySelector(
+          "script[data-dynamic-id='extension-test-script']",
+        )
+      ) {
+        return true;
+      }
+
+      window.__synthexExtensionScriptInjected = true;
+      const script = document.createElement("script");
+      script.type = "application/x-extension-placeholder";
+      script.charset = "utf-8";
+      script.setAttribute("bis_use", "true");
+      script.setAttribute("data-dynamic-id", "extension-test-script");
+      script.src =
+        "chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js";
+      document.head.insertBefore(script, document.head.firstChild);
+      return true;
+    };
+
     const applyExtensionAttributes = () => {
       if (!document.body) {
         return false;
       }
 
+      window.__synthexExtensionAttributesInjected = true;
       document.body.setAttribute(
         "__processed_67012a90-f8d6-4c88-b6a8-2530ef4d96c9__",
         "true",
       );
       document.body.setAttribute("bis_register", "extension-test-payload");
+      document.querySelectorAll("div").forEach((element) => {
+        element.setAttribute("bis_skin_checked", "1");
+      });
       return true;
     };
 
-    if (applyExtensionAttributes()) {
-      return;
-    }
-
     const observer = new MutationObserver(() => {
-      if (applyExtensionAttributes()) {
-        observer.disconnect();
-      }
+      applyExtensionHeadScript();
+      applyExtensionAttributes();
     });
 
     observer.observe(document, {
       childList: true,
       subtree: true,
     });
+    applyExtensionHeadScript();
+    applyExtensionAttributes();
   });
 
-  await page.goto(url, { waitUntil: "networkidle" });
+  await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(750);
 
   const bodyAttributes = await page.evaluate(() => ({
+    checkedDivs: document.querySelectorAll("div[bis_skin_checked='1']").length,
+    extensionHeadScripts: document.querySelectorAll(
+      "script[src^='chrome-extension://'],script[bis_use],script[data-dynamic-id='extension-test-script']",
+    ).length,
+    guardPresent: Boolean(
+      document.querySelector("script[data-extension-hydration-guard]"),
+    ),
+    injectionAttempted:
+      window.__synthexExtensionAttributesInjected === true,
+    scriptInjectionAttempted:
+      window.__synthexExtensionScriptInjected === true,
     processed: document.body.getAttribute(
       "__processed_67012a90-f8d6-4c88-b6a8-2530ef4d96c9__",
     ),
     registered: document.body.getAttribute("bis_register"),
   }));
 
-  assert.equal(bodyAttributes.processed, "true");
-  assert.equal(bodyAttributes.registered, "extension-test-payload");
+  assert.equal(bodyAttributes.injectionAttempted, true);
+  assert.equal(bodyAttributes.scriptInjectionAttempted, true);
+  assert.equal(bodyAttributes.guardPresent, true);
+  assert.equal(bodyAttributes.processed, null);
+  assert.equal(bodyAttributes.registered, null);
+  assert.equal(bodyAttributes.checkedDivs, 0);
+  assert.equal(bodyAttributes.extensionHeadScripts, 0);
   assert.equal(
     errors.some((message) =>
       /hydrated|hydration|didn't match|did not match/i.test(message),

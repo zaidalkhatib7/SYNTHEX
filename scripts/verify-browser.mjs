@@ -18,6 +18,7 @@ const artifactDirectory = path.resolve(
 );
 
 const contentTypes = {
+  ".avif": "image/avif",
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
   ".ico": "image/x-icon",
@@ -128,6 +129,9 @@ if (!address || typeof address === "string") {
 }
 
 const baseUrl = `http://127.0.0.1:${address.port}`;
+const robotsResponse = await fetch(`${baseUrl}/robots.txt`);
+assert.equal(robotsResponse.status, 200);
+assert.match(await robotsResponse.text(), /Allow: \//);
 const executablePath = await findExecutable();
 const browser = await chromium.launch({ executablePath, headless: true });
 
@@ -136,271 +140,692 @@ try {
     mkdir(artifactDirectory, { recursive: true }),
   );
 
+  function trackPage(page) {
+    const errors = [];
+    const failedResponses = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") {
+        errors.push(message.text());
+      }
+    });
+    page.on("pageerror", (error) => errors.push(error.message));
+    page.on("response", (response) => {
+      if (response.status() >= 400) {
+        failedResponses.push(`${response.status()} ${response.url()}`);
+      }
+    });
+    return { errors, failedResponses };
+  }
+
   const desktop = await browser.newPage({
     viewport: { width: 1440, height: 1000 },
   });
-  const desktopErrors = [];
-  const desktopFailedResponses = [];
-  desktop.on("console", (message) => {
-    if (message.type() === "error") {
-      const location = message.location();
-      desktopErrors.push(
-        `${message.text()}${location.url ? ` (${location.url})` : ""}`,
-      );
-    }
-  });
-  desktop.on("pageerror", (error) => desktopErrors.push(error.message));
-  desktop.on("response", (response) => {
-    if (response.status() >= 400) {
-      desktopFailedResponses.push(`${response.status()} ${response.url()}`);
-    }
-  });
+  const desktopTracking = trackPage(desktop);
 
-  await desktop.goto(`${baseUrl}/en/`, {
-    waitUntil: "networkidle",
-  });
-  await desktop.waitForFunction(
-    () =>
-      document
-        .querySelector("[data-holding-scene]")
-        ?.getAttribute("data-webgl-status") !== "checking",
-  );
-
-  const sceneStatus = await desktop
-    .locator("[data-holding-scene]")
-    .getAttribute("data-webgl-status");
-  if (sceneStatus === "available") {
-    await desktop.waitForFunction(
-      () =>
-        document
-          .querySelector("[data-holding-scene]")
-          ?.getAttribute("data-scene-ready") === "true",
-    );
-  }
-
+  await desktop.goto(`${baseUrl}/en/`, { waitUntil: "networkidle" });
   const heroState = await desktop.evaluate(() => {
-    const scene = document.querySelector("[data-holding-scene]");
+    const figure = document.querySelector("[data-rendered-scene]");
+    const image = figure?.querySelector("img");
     return {
-      canvasCount: scene?.querySelectorAll("canvas").length ?? 0,
-      fallbackCount:
-        scene?.querySelectorAll("[data-scene-fallback]").length ?? 0,
-      ready: scene?.getAttribute("data-scene-ready"),
-      tier: scene?.getAttribute("data-render-tier"),
-      webgl: scene?.getAttribute("data-webgl-status"),
+      canvasCount: document.querySelectorAll("canvas").length,
+      currentSrc: image?.currentSrc,
+      loaded: figure?.getAttribute("data-scene-loaded"),
+      motion: document.documentElement.dataset.motion,
+      naturalWidth: image?.naturalWidth,
+      navbarCompany: document.querySelector("header")?.getAttribute("data-company"),
+      sourceCount: figure?.querySelectorAll("source").length,
     };
   });
+  assert.equal(heroState.canvasCount, 0);
+  assert.match(heroState.currentSrc ?? "", /synthex-holding-/);
+  assert.equal(heroState.loaded, "true");
+  assert.equal(heroState.motion, "full");
+  assert.equal(heroState.navbarCompany, "holding");
+  assert.ok((heroState.naturalWidth ?? 0) >= 640);
+  assert.equal(heroState.sourceCount, 2);
+  const metadataState = await desktop.evaluate(() => {
+    const schema = document.querySelector('script[type="application/ld+json"]');
+    return {
+      alternateCount: document.querySelectorAll('link[rel="alternate"][hreflang]')
+        .length,
+      canonical: document.querySelector('link[rel="canonical"]')?.getAttribute(
+        "href",
+      ),
+      description: document
+        .querySelector('meta[name="description"]')
+        ?.getAttribute("content"),
+      ogTitle: document
+        .querySelector('meta[property="og:title"]')
+        ?.getAttribute("content"),
+      organization: schema ? JSON.parse(schema.textContent).name : null,
+      subOrganizationCount: schema
+        ? JSON.parse(schema.textContent).subOrganization.length
+        : 0,
+    };
+  });
+  assert.match(metadataState.canonical ?? "", /\/en\/$/);
+  assert.equal(metadataState.alternateCount, 2);
+  assert.match(metadataState.description ?? "", /four operating companies/i);
+  assert.equal(metadataState.ogTitle, "SYNTHEX Holding");
+  assert.equal(metadataState.organization, "SYNTHEX Holding");
+  assert.equal(metadataState.subOrganizationCount, 4);
+  const accessibilityState = await desktop.evaluate(() => {
+    const unnamedInteractive = Array.from(
+      document.querySelectorAll("a, button"),
+    ).filter(
+      (element) =>
+        !element.textContent?.trim() &&
+        !element.getAttribute("aria-label") &&
+        !element.getAttribute("aria-labelledby"),
+    );
+    return {
+      footerCount: document.querySelectorAll("footer:not([hidden])").length,
+      h1Count: document.querySelectorAll("h1").length,
+      imageWithoutAlt: document.querySelectorAll("img:not([alt])").length,
+      mainCount: document.querySelectorAll("main").length,
+      navigationCount: document.querySelectorAll("nav").length,
+      unnamedInteractive: unnamedInteractive.length,
+    };
+  });
+  assert.equal(accessibilityState.mainCount, 1);
+  assert.equal(accessibilityState.h1Count, 1);
+  assert.equal(accessibilityState.footerCount, 1);
+  assert.ok(accessibilityState.navigationCount >= 3);
+  assert.equal(accessibilityState.imageWithoutAlt, 0);
+  assert.equal(accessibilityState.unnamedInteractive, 0);
+  const resourceState = await desktop.evaluate(() => {
+    const totals = { css: 0, image: 0, js: 0, other: 0 };
+    for (const entry of performance.getEntriesByType("resource")) {
+      const resource = entry;
+      const bytes = resource.transferSize || resource.encodedBodySize || 0;
+      if (resource.initiatorType === "script") {
+        totals.js += bytes;
+      } else if (
+        resource.initiatorType === "img" ||
+        /\.(?:avif|webp|png|jpe?g)(?:\?|$)/.test(resource.name)
+      ) {
+        totals.image += bytes;
+      } else if (
+        resource.initiatorType === "css" ||
+        /\.css(?:\?|$)/.test(resource.name)
+      ) {
+        totals.css += bytes;
+      } else {
+        totals.other += bytes;
+      }
+    }
+    return totals;
+  });
+  assert.ok(resourceState.js > 0);
+  assert.ok(resourceState.css > 0);
+  assert.ok(resourceState.image > 0);
 
-  assert.equal(heroState.fallbackCount, 1);
-  assert.notEqual(heroState.webgl, "checking");
-  if (heroState.webgl === "available") {
-    assert.match(heroState.tier ?? "", /^[12]$/);
-    assert.equal(heroState.ready, "true");
-    assert.equal(heroState.canvasCount, 1);
-  } else {
-    assert.equal(heroState.tier, "0");
-    assert.equal(heroState.canvasCount, 0);
-  }
-
+  await desktop.keyboard.press("Tab");
+  assert.match(
+    (await desktop.evaluate(() => document.activeElement?.textContent)) ?? "",
+    /Skip to content/,
+  );
+  const heroScene = desktop.locator("[data-interactive-scene]").first();
+  const heroBounds = await heroScene.boundingBox();
+  assert.ok(heroBounds);
+  await desktop.mouse.move(
+    heroBounds.x + heroBounds.width * 0.8,
+    heroBounds.y + heroBounds.height * 0.25,
+  );
+  const heroInteraction = await heroScene.evaluate((scene) => ({
+    rotateX: scene.style.getPropertyValue("--scene-rotate-x"),
+    rotateY: scene.style.getPropertyValue("--scene-rotate-y"),
+    captionCount: scene.querySelectorAll("figcaption").length,
+    overlayControlCount: scene.querySelectorAll("button").length,
+  }));
+  assert.notEqual(heroInteraction.rotateX, "0deg");
+  assert.notEqual(heroInteraction.rotateY, "0deg");
+  assert.equal(heroInteraction.captionCount, 0);
+  assert.equal(heroInteraction.overlayControlCount, 0);
+  await desktop.evaluate(() => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  });
   await desktop.screenshot({
     path: path.join(artifactDirectory, "desktop-hero.png"),
     fullPage: false,
   });
 
-  await desktop.locator('main a[href="#companies"]').click();
-  await desktop.waitForTimeout(800);
-  await desktop
-    .locator('[class*="companyOption"][data-company="jollaq"]')
-    .hover();
+  await desktop.goto(`${baseUrl}/en/#companies`, {
+    waitUntil: "networkidle",
+  });
+  await desktop.locator("#companies").scrollIntoViewIfNeeded();
   await desktop.screenshot({
-    path: path.join(artifactDirectory, "desktop-companies.png"),
+    path: path.join(artifactDirectory, "desktop-company-selector.png"),
     fullPage: false,
   });
 
-  await desktop.goto(`${baseUrl}/en/#jollaq`, {
+  await desktop.goto(`${baseUrl}/en/#overview`, {
     waitUntil: "networkidle",
   });
-  await desktop.waitForTimeout(250);
-
-  const directState = await desktop.evaluate(() => ({
+  await desktop
+    .locator("#overview [data-interactive-scene]")
+    .scrollIntoViewIfNeeded();
+  const holdingOverviewState = await desktop.evaluate(() => ({
     company: document.documentElement.dataset.company,
-    section: document.documentElement.dataset.activeSection,
-    hash: window.location.hash,
-    scrollY: Math.round(window.scrollY),
-    h1Count: document.querySelectorAll("h1").length,
-    heroCanvasCount:
-      document.querySelector("[data-holding-scene]")?.querySelectorAll("canvas")
-        .length ?? 0,
-    heroSceneActive: document
-      .querySelector("[data-holding-scene]")
-      ?.getAttribute("data-scene-active"),
-    mainCount: document.querySelectorAll("main").length,
-    navCount: document.querySelectorAll("nav").length,
-    heading: document.querySelector("#jollaq h2")?.textContent?.trim(),
+    currentSrc: document.querySelector(
+      "#overview [data-interactive-scene] img",
+    )?.currentSrc,
+    sectorCount: document.querySelectorAll(
+      '#overview [class*="sectorList"] article',
+    ).length,
   }));
-
-  assert.equal(directState.company, "jollaq");
-  assert.equal(directState.section, "jollaq");
-  assert.equal(directState.hash, "#jollaq");
-  assert.ok(directState.scrollY > 1000);
-  assert.equal(directState.h1Count, 1);
-  assert.equal(directState.heroCanvasCount, 0);
-  assert.equal(directState.heroSceneActive, "false");
-  assert.equal(directState.mainCount, 1);
-  assert.ok(directState.navCount >= 2);
-  assert.ok(directState.heading?.length);
-  assert.deepEqual(
-    desktopFailedResponses,
-    [],
-    `Failed desktop responses:\n${desktopFailedResponses.join("\n")}`,
-  );
-  assert.deepEqual(
-    desktopErrors,
-    [],
-    `Desktop console errors:\n${desktopErrors.join("\n")}`,
-  );
-
+  assert.equal(holdingOverviewState.company, "holding");
+  assert.match(holdingOverviewState.currentSrc ?? "", /holding-global-/);
+  assert.equal(holdingOverviewState.sectorCount, 5);
   await desktop.screenshot({
-    path: path.join(artifactDirectory, "desktop-jollaq.png"),
+    path: path.join(artifactDirectory, "desktop-holding-overview.png"),
+    fullPage: false,
+  });
+
+  await desktop.goto(`${baseUrl}/en/#story`, { waitUntil: "networkidle" });
+  const storyState = await desktop.evaluate(() => ({
+    approvalCount: document.querySelectorAll(
+      '#story [class*="timelineDetailed"] article span',
+    ).length,
+    currentSrc: document.querySelector("#story [data-interactive-scene] img")
+      ?.currentSrc,
+    leadership: document
+      .querySelector('#story [class*="leadershipNotice"]')
+      ?.textContent?.trim(),
+    timelineCount: document.querySelectorAll(
+      '#story [class*="timelineDetailed"] article',
+    ).length,
+  }));
+  assert.equal(storyState.timelineCount, 3);
+  assert.equal(storyState.approvalCount, 3);
+  assert.match(storyState.currentSrc ?? "", /holding-structure-/);
+  assert.match(storyState.leadership ?? "", /Hisham Abdeen/);
+  await desktop.screenshot({
+    path: path.join(artifactDirectory, "desktop-holding-story.png"),
+    fullPage: false,
+  });
+
+  await desktop.goto(`${baseUrl}/en/#principles`, {
+    waitUntil: "networkidle",
+  });
+  assert.equal(
+    await desktop.locator("#principles article").count(),
+    3,
+  );
+  assert.equal(
+    await desktop
+      .locator("#principles article")
+      .filter({ hasText: "Approved copy required" })
+      .count(),
+    3,
+  );
+
+  await desktop.goto(`${baseUrl}/en/#jollaq`, { waitUntil: "networkidle" });
+  await desktop.locator("#jollaq [data-rendered-scene]").scrollIntoViewIfNeeded();
+  const jollaqState = await desktop.evaluate(() => {
+    const image = document.querySelector("#jollaq [data-rendered-scene] img");
+    return {
+      company: document.documentElement.dataset.company,
+      currentSrc: image?.currentSrc,
+      hash: window.location.hash,
+      loading: image?.getAttribute("loading"),
+      canvasCount: document.querySelectorAll("canvas").length,
+      placeholders: ["#shamco"].filter((selector) =>
+        document.querySelector(`${selector} [role="img"]`),
+      ).length,
+    };
+  });
+  assert.equal(jollaqState.company, "jollaq");
+  assert.equal(jollaqState.hash, "#jollaq");
+  assert.match(jollaqState.currentSrc ?? "", /jollaq-commodities-/);
+  assert.equal(jollaqState.loading, "lazy");
+  assert.equal(jollaqState.canvasCount, 0);
+  assert.equal(jollaqState.placeholders, 0);
+  const jollaqScene = desktop.locator("#jollaq [data-interactive-scene]");
+  assert.equal(await jollaqScene.locator("button").count(), 0);
+  assert.equal(await jollaqScene.locator("figcaption").count(), 0);
+  await desktop.screenshot({
+    path: path.join(artifactDirectory, "desktop-jollaq-scene.png"),
+    fullPage: false,
+  });
+
+  await desktop.goto(`${baseUrl}/en/#al-maria`, { waitUntil: "networkidle" });
+  await desktop
+    .locator("#al-maria [data-rendered-scene]")
+    .scrollIntoViewIfNeeded();
+  const alMariaState = await desktop.evaluate(() => {
+    const image = document.querySelector("#al-maria [data-rendered-scene] img");
+    return {
+      company: document.documentElement.dataset.company,
+      currentSrc: image?.currentSrc,
+      hash: window.location.hash,
+      loading: image?.getAttribute("loading"),
+    };
+  });
+  assert.equal(alMariaState.company, "al-maria");
+  assert.equal(alMariaState.hash, "#al-maria");
+  assert.match(alMariaState.currentSrc ?? "", /al-maria-trade-/);
+  assert.equal(alMariaState.loading, "lazy");
+  await desktop.screenshot({
+    path: path.join(artifactDirectory, "desktop-al-maria-scene.png"),
+    fullPage: false,
+  });
+
+  await desktop.goto(`${baseUrl}/en/#industrial`, {
+    waitUntil: "networkidle",
+  });
+  await desktop
+    .locator("#industrial [data-interactive-scene]")
+    .scrollIntoViewIfNeeded();
+  const industrialScene = desktop.locator(
+    "#industrial [data-interactive-scene]",
+  );
+  const industrialInitial = await desktop.evaluate(() => {
+    const section = document.querySelector("#industrial");
+    const image = section?.querySelector("[data-interactive-scene] img");
+    return {
+      company: document.documentElement.dataset.company,
+      currentSrc: image?.currentSrc,
+      hash: window.location.hash,
+      selectorCount: section?.querySelectorAll(
+        '[role="group"] button',
+      ).length,
+      overlayControlCount: section?.querySelectorAll(
+        "[data-interactive-scene] button",
+      ).length,
+    };
+  });
+  assert.equal(industrialInitial.company, "industrial");
+  assert.equal(industrialInitial.hash, "#industrial");
+  assert.match(industrialInitial.currentSrc ?? "", /industrial-identity-/);
+  assert.equal(industrialInitial.selectorCount, 3);
+  assert.equal(industrialInitial.overlayControlCount, 0);
+
+  await desktop
+    .locator('#industrial [role="group"] button')
+    .nth(1)
+    .click();
+  await desktop.waitForTimeout(300);
+  assert.match(
+    (await industrialScene.locator("img").getAttribute("src")) ?? "",
+    /industrial-metals-/,
+  );
+  assert.equal(await industrialScene.locator("button").count(), 0);
+  assert.match(
+    await industrialScene.evaluate(
+      (scene) => getComputedStyle(scene).animationName,
+    ),
+    /sceneArrival/,
+  );
+
+  await desktop
+    .locator('#industrial [role="group"] button')
+    .nth(2)
+    .click();
+  await desktop.waitForTimeout(300);
+  assert.match(
+    (await industrialScene.locator("img").getAttribute("src")) ?? "",
+    /industrial-paint-/,
+  );
+  assert.equal(await industrialScene.locator("button").count(), 0);
+  assert.equal(await industrialScene.locator("figcaption").count(), 0);
+  await desktop.screenshot({
+    path: path.join(artifactDirectory, "desktop-industrial-scene.png"),
+    fullPage: false,
+  });
+
+  await desktop.goto(`${baseUrl}/en/#shamco`, {
+    waitUntil: "networkidle",
+  });
+  await desktop
+    .locator("#shamco [data-interactive-scene]")
+    .scrollIntoViewIfNeeded();
+  const shamcoScene = desktop.locator("#shamco [data-interactive-scene]");
+  const shamcoInitial = await desktop.evaluate(() => {
+    const section = document.querySelector("#shamco");
+    const image = section?.querySelector("[data-interactive-scene] img");
+    return {
+      company: document.documentElement.dataset.company,
+      currentSrc: image?.currentSrc,
+      disclosure: section
+        ?.querySelector('[class*="shamcoMapNotice"]')
+        ?.textContent?.trim(),
+      hash: window.location.hash,
+      overlayControlCount: section?.querySelectorAll(
+        "[data-interactive-scene] button",
+      ).length,
+      selectorCount: section?.querySelectorAll('[role="group"] button')
+        .length,
+    };
+  });
+  assert.equal(shamcoInitial.company, "shamco");
+  assert.equal(shamcoInitial.hash, "#shamco");
+  assert.match(shamcoInitial.currentSrc ?? "", /shamco-identity-/);
+  assert.match(shamcoInitial.disclosure ?? "", /illustrative only/);
+  assert.equal(shamcoInitial.selectorCount, 3);
+  assert.equal(shamcoInitial.overlayControlCount, 0);
+
+  await desktop.locator('#shamco [role="group"] button').nth(1).click();
+  await desktop.waitForFunction(
+    () =>
+      document
+        .querySelector("#shamco [data-interactive-scene] img")
+        ?.currentSrc.includes("shamco-network-") === true,
+  );
+  assert.equal(await shamcoScene.locator("button").count(), 0);
+
+  await desktop.locator('#shamco [role="group"] button').nth(2).click();
+  await desktop.waitForFunction(
+    () =>
+      document
+        .querySelector("#shamco [data-interactive-scene] img")
+        ?.currentSrc.includes("shamco-warehouse-") === true,
+  );
+  assert.equal(await shamcoScene.locator("button").count(), 0);
+  assert.equal(await shamcoScene.locator("figcaption").count(), 0);
+  await desktop.screenshot({
+    path: path.join(artifactDirectory, "desktop-shamco-scene.png"),
+    fullPage: false,
+  });
+
+  await desktop.goto(`${baseUrl}/en/#network`, {
+    waitUntil: "networkidle",
+  });
+  await desktop
+    .locator("#network [data-interactive-scene]")
+    .scrollIntoViewIfNeeded();
+  const networkState = await desktop.evaluate(() => ({
+    company: document.documentElement.dataset.company,
+    companyLinks: document.querySelectorAll(
+      '#network [class*="networkCompanies"] a',
+    ).length,
+    currentSrc: document.querySelector("#network [data-interactive-scene] img")
+      ?.currentSrc,
+    overlayControlCount: document.querySelectorAll(
+      "#network [data-interactive-scene] button",
+    ).length,
+    visible: document.querySelector("#network")?.getAttribute("data-visible"),
+  }));
+  assert.equal(networkState.company, "holding");
+  assert.equal(networkState.companyLinks, 4);
+  assert.equal(networkState.overlayControlCount, 0);
+  assert.equal(networkState.visible, "true");
+  assert.match(networkState.currentSrc ?? "", /holding-network-/);
+  await desktop.screenshot({
+    path: path.join(artifactDirectory, "desktop-holding-network.png"),
+    fullPage: false,
+  });
+
+  await desktop.goto(`${baseUrl}/en/#contact`, {
+    waitUntil: "networkidle",
+  });
+  const contactState = await desktop.evaluate(() => ({
+    company: document.documentElement.dataset.company,
+    formCount: document.querySelectorAll("#contact form").length,
+    routeCount: document.querySelectorAll(
+      '#contact [class*="contactRoutes"] a',
+    ).length,
+    requiredText: document
+      .querySelector('#contact [class*="contactDependency"]')
+      ?.textContent?.trim(),
+  }));
+  assert.equal(contactState.company, "holding");
+  assert.equal(contactState.formCount, 0);
+  assert.equal(contactState.routeCount, 4);
+  assert.match(contactState.requiredText ?? "", /Required before launch/);
+  assert.equal(
+    await desktop.locator("#footer nav a").count(),
+    4,
+  );
+  await desktop.screenshot({
+    path: path.join(artifactDirectory, "desktop-holding-contact.png"),
     fullPage: false,
   });
 
   const mobile = await browser.newPage({
     viewport: { width: 390, height: 844 },
   });
-  const mobileErrors = [];
-  const mobileFailedResponses = [];
-  mobile.on("console", (message) => {
-    if (message.type() === "error") {
-      const location = message.location();
-      mobileErrors.push(
-        `${message.text()}${location.url ? ` (${location.url})` : ""}`,
-      );
-    }
-  });
-  mobile.on("pageerror", (error) => mobileErrors.push(error.message));
-  mobile.on("response", (response) => {
-    if (response.status() >= 400) {
-      mobileFailedResponses.push(`${response.status()} ${response.url()}`);
-    }
-  });
-
-  await mobile.goto(`${baseUrl}/en/`, {
-    waitUntil: "networkidle",
-  });
-  await mobile.waitForTimeout(1000);
-  const mobileHero = await mobile.evaluate(() => {
-    const scene = document.querySelector("[data-holding-scene]");
-    return {
-      canvasCount: scene?.querySelectorAll("canvas").length ?? 0,
-      documentWidth: document.documentElement.scrollWidth,
-      ready: scene?.getAttribute("data-scene-ready"),
-      tier: scene?.getAttribute("data-render-tier"),
-      viewportWidth: window.innerWidth,
-    };
-  });
-  assert.equal(mobileHero.documentWidth, mobileHero.viewportWidth);
-  assert.equal(mobileHero.tier, "1");
-  assert.equal(mobileHero.ready, "true");
-  assert.equal(mobileHero.canvasCount, 1);
-  await mobile.screenshot({
-    path: path.join(artifactDirectory, "mobile-hero.png"),
-    fullPage: false,
-  });
-
-  await mobile.goto(`${baseUrl}/en/#companies`, {
-    waitUntil: "networkidle",
-  });
-  await mobile.waitForTimeout(1000);
-
+  const mobileTracking = trackPage(mobile);
+  await mobile.goto(`${baseUrl}/en/#companies`, { waitUntil: "networkidle" });
   const mobileLayout = await mobile.evaluate(() => ({
-    viewportWidth: window.innerWidth,
-    documentWidth: document.documentElement.scrollWidth,
     company: document.documentElement.dataset.company,
+    documentWidth: document.documentElement.scrollWidth,
     section: document.documentElement.dataset.activeSection,
+    viewportWidth: window.innerWidth,
   }));
-
   assert.equal(mobileLayout.documentWidth, mobileLayout.viewportWidth);
   assert.equal(mobileLayout.company, "holding");
   assert.equal(mobileLayout.section, "companies");
 
-  await mobile.locator('a[href="#jollaq"]').last().focus();
+  await mobile
+    .locator('#companies [class*="companySelector"] a[href="#jollaq"]')
+    .focus();
   await mobile.keyboard.press("ArrowRight");
   assert.equal(
-    await mobile.evaluate(
-      () => document.activeElement?.getAttribute("href"),
-    ),
+    await mobile.evaluate(() => document.activeElement?.getAttribute("href")),
     "#al-maria",
   );
-
   await mobile.keyboard.press("Enter");
-  await mobile.waitForTimeout(1500);
+  await mobile.waitForTimeout(1200);
   assert.equal(await mobile.evaluate(() => window.location.hash), "#al-maria");
-  assert.equal(
-    await mobile.evaluate(() => document.documentElement.dataset.company),
-    "al-maria",
-  );
-
   await mobile.goBack({ waitUntil: "networkidle" });
-  await mobile.waitForTimeout(300);
   assert.equal(await mobile.evaluate(() => window.location.hash), "#companies");
-  assert.equal(
-    await mobile.evaluate(() => document.documentElement.dataset.company),
-    "holding",
-  );
-
-  await mobile.goto(`${baseUrl}/en/#industrial`, {
-    waitUntil: "networkidle",
-  });
+  await mobile.goForward({ waitUntil: "networkidle" });
+  assert.equal(await mobile.evaluate(() => window.location.hash), "#al-maria");
   await mobile.keyboard.press("Escape");
   await mobile.waitForTimeout(750);
   assert.equal(await mobile.evaluate(() => window.location.hash), "#companies");
   assert.equal(
-    await mobile.evaluate(() => document.documentElement.dataset.company),
-    "holding",
+    await mobile.evaluate(() => document.activeElement?.getAttribute("href")),
+    "#jollaq",
   );
 
-  await mobile.goto(`${baseUrl}/en/#companies`, {
+  await mobile.goto(`${baseUrl}/en/#jollaq`, { waitUntil: "networkidle" });
+  await mobile.locator("#jollaq [data-rendered-scene]").scrollIntoViewIfNeeded();
+  const mobileJollaq = await mobile.evaluate(() => ({
+    currentSrc: document.querySelector("#jollaq [data-rendered-scene] img")
+      ?.currentSrc,
+    documentWidth: document.documentElement.scrollWidth,
+    viewportWidth: window.innerWidth,
+  }));
+  assert.equal(mobileJollaq.documentWidth, mobileJollaq.viewportWidth);
+  assert.match(mobileJollaq.currentSrc ?? "", /jollaq-commodities-/);
+  const mobileJollaqScene = mobile.locator(
+    "#jollaq [data-interactive-scene]",
+  );
+  assert.equal(await mobileJollaqScene.locator("button").count(), 0);
+  assert.equal(await mobileJollaqScene.locator("figcaption").count(), 0);
+  await mobile.screenshot({
+    path: path.join(artifactDirectory, "mobile-jollaq.png"),
+    fullPage: false,
+  });
+
+  await mobile.goto(`${baseUrl}/en/#industrial`, {
     waitUntil: "networkidle",
   });
+  await mobile
+    .locator("#industrial [data-interactive-scene]")
+    .scrollIntoViewIfNeeded();
+  await mobile
+    .locator('#industrial [role="group"] button')
+    .nth(1)
+    .click();
+  await mobile.waitForFunction(
+    () =>
+      document
+        .querySelector("#industrial [data-interactive-scene] img")
+        ?.currentSrc.includes("industrial-metals-") === true,
+  );
+  const mobileIndustrial = await mobile.evaluate(() => ({
+    company: document.documentElement.dataset.company,
+    currentSrc: document.querySelector(
+      "#industrial [data-interactive-scene] img",
+    )?.currentSrc,
+    documentWidth: document.documentElement.scrollWidth,
+    viewportWidth: window.innerWidth,
+  }));
+  assert.equal(mobileIndustrial.company, "industrial");
+  assert.equal(mobileIndustrial.documentWidth, mobileIndustrial.viewportWidth);
+  assert.match(mobileIndustrial.currentSrc ?? "", /industrial-metals-/);
   await mobile.screenshot({
-    path: path.join(artifactDirectory, "mobile-companies.png"),
+    path: path.join(artifactDirectory, "mobile-industrial.png"),
+    fullPage: false,
+  });
+
+  await mobile.goto(`${baseUrl}/en/#shamco`, {
+    waitUntil: "networkidle",
+  });
+  await mobile
+    .locator("#shamco [data-interactive-scene]")
+    .scrollIntoViewIfNeeded();
+  await mobile.locator('#shamco [role="group"] button').nth(2).click();
+  await mobile.waitForFunction(
+    () =>
+      document
+        .querySelector("#shamco [data-interactive-scene] img")
+        ?.currentSrc.includes("shamco-warehouse-") === true,
+  );
+  const mobileShamco = await mobile.evaluate(() => ({
+    company: document.documentElement.dataset.company,
+    currentSrc: document.querySelector(
+      "#shamco [data-interactive-scene] img",
+    )?.currentSrc,
+    documentWidth: document.documentElement.scrollWidth,
+    viewportWidth: window.innerWidth,
+  }));
+  assert.equal(mobileShamco.company, "shamco");
+  assert.equal(mobileShamco.documentWidth, mobileShamco.viewportWidth);
+  assert.match(mobileShamco.currentSrc ?? "", /shamco-warehouse-/);
+  await mobile.screenshot({
+    path: path.join(artifactDirectory, "mobile-shamco.png"),
+    fullPage: false,
+  });
+
+  await mobile.goto(`${baseUrl}/ar/#al-maria`, { waitUntil: "networkidle" });
+  const rtlState = await mobile.evaluate(() => ({
+    currentSrc: document.querySelector("#al-maria [data-rendered-scene] img")
+      ?.currentSrc,
+    dir: document.documentElement.dir,
+    documentWidth: document.documentElement.scrollWidth,
+    heading: document.querySelector("#al-maria h2")?.textContent?.trim(),
+    lang: document.documentElement.lang,
+    viewportWidth: window.innerWidth,
+  }));
+  assert.equal(rtlState.lang, "ar");
+  assert.equal(rtlState.dir, "rtl");
+  assert.equal(rtlState.documentWidth, rtlState.viewportWidth);
+  assert.match(rtlState.heading ?? "", /[\u0600-\u06ff]/);
+  assert.match(rtlState.currentSrc ?? "", /al-maria-trade-/);
+  await mobile.screenshot({
+    path: path.join(artifactDirectory, "mobile-al-maria-ar.png"),
     fullPage: false,
   });
 
   await mobile.goto(`${baseUrl}/ar/#industrial`, {
     waitUntil: "networkidle",
   });
-  await mobile.waitForTimeout(250);
-
-  const rtlState = await mobile.evaluate(() => ({
-    lang: document.documentElement.lang,
-    dir: document.documentElement.dir,
+  await mobile
+    .locator("#industrial [data-interactive-scene]")
+    .scrollIntoViewIfNeeded();
+  await mobile
+    .locator('#industrial [role="group"] button')
+    .nth(2)
+    .click();
+  await mobile.waitForFunction(
+    () =>
+      document
+        .querySelector("#industrial [data-interactive-scene] img")
+        ?.currentSrc.includes("industrial-paint-") === true,
+  );
+  const industrialRtlState = await mobile.evaluate(() => ({
     company: document.documentElement.dataset.company,
-    section: document.documentElement.dataset.activeSection,
-    viewportWidth: window.innerWidth,
+    currentSrc: document.querySelector(
+      "#industrial [data-interactive-scene] img",
+    )?.currentSrc,
+    dir: document.documentElement.dir,
     documentWidth: document.documentElement.scrollWidth,
     heading: document.querySelector("#industrial h2")?.textContent?.trim(),
+    lang: document.documentElement.lang,
+    viewportWidth: window.innerWidth,
   }));
-
-  assert.equal(rtlState.lang, "ar");
-  assert.equal(rtlState.dir, "rtl");
-  assert.equal(rtlState.company, "industrial");
-  assert.equal(rtlState.section, "industrial");
-  assert.equal(rtlState.documentWidth, rtlState.viewportWidth);
-  assert.match(rtlState.heading ?? "", /[\u0600-\u06ff]/);
-  assert.deepEqual(
-    mobileFailedResponses,
-    [],
-    `Failed mobile responses:\n${mobileFailedResponses.join("\n")}`,
+  assert.equal(industrialRtlState.company, "industrial");
+  assert.equal(industrialRtlState.lang, "ar");
+  assert.equal(industrialRtlState.dir, "rtl");
+  assert.equal(
+    industrialRtlState.documentWidth,
+    industrialRtlState.viewportWidth,
   );
-  assert.deepEqual(
-    mobileErrors,
-    [],
-    `Mobile console errors:\n${mobileErrors.join("\n")}`,
+  assert.match(industrialRtlState.heading ?? "", /[\u0600-\u06ff]/);
+  assert.match(
+    industrialRtlState.currentSrc ?? "",
+    /industrial-paint-/,
   );
-
   await mobile.screenshot({
     path: path.join(artifactDirectory, "mobile-industrial-ar.png"),
+    fullPage: false,
+  });
+
+  await mobile.goto(`${baseUrl}/ar/#shamco`, {
+    waitUntil: "networkidle",
+  });
+  await mobile
+    .locator("#shamco [data-interactive-scene]")
+    .scrollIntoViewIfNeeded();
+  await mobile.locator('#shamco [role="group"] button').nth(1).click();
+  await mobile.waitForFunction(
+    () =>
+      document
+        .querySelector("#shamco [data-interactive-scene] img")
+        ?.currentSrc.includes("shamco-network-") === true,
+  );
+  const shamcoRtlState = await mobile.evaluate(() => ({
+    company: document.documentElement.dataset.company,
+    currentSrc: document.querySelector(
+      "#shamco [data-interactive-scene] img",
+    )?.currentSrc,
+    dir: document.documentElement.dir,
+    documentWidth: document.documentElement.scrollWidth,
+    heading: document.querySelector("#shamco h2")?.textContent?.trim(),
+    lang: document.documentElement.lang,
+    viewportWidth: window.innerWidth,
+  }));
+  assert.equal(shamcoRtlState.company, "shamco");
+  assert.equal(shamcoRtlState.lang, "ar");
+  assert.equal(shamcoRtlState.dir, "rtl");
+  assert.equal(shamcoRtlState.documentWidth, shamcoRtlState.viewportWidth);
+  assert.match(shamcoRtlState.heading ?? "", /[\u0600-\u06ff]/);
+  assert.match(shamcoRtlState.currentSrc ?? "", /shamco-network-/);
+  await mobile.screenshot({
+    path: path.join(artifactDirectory, "mobile-shamco-ar.png"),
+    fullPage: false,
+  });
+
+  await mobile.goto(`${baseUrl}/ar/#network`, {
+    waitUntil: "networkidle",
+  });
+  await mobile
+    .locator("#network [data-interactive-scene]")
+    .scrollIntoViewIfNeeded();
+  const holdingRtlState = await mobile.evaluate(() => ({
+    company: document.documentElement.dataset.company,
+    currentSrc: document.querySelector("#network [data-interactive-scene] img")
+      ?.currentSrc,
+    dir: document.documentElement.dir,
+    documentWidth: document.documentElement.scrollWidth,
+    heading: document.querySelector("#network h2")?.textContent?.trim(),
+    lang: document.documentElement.lang,
+    viewportWidth: window.innerWidth,
+  }));
+  assert.equal(holdingRtlState.company, "holding");
+  assert.equal(holdingRtlState.lang, "ar");
+  assert.equal(holdingRtlState.dir, "rtl");
+  assert.equal(holdingRtlState.documentWidth, holdingRtlState.viewportWidth);
+  assert.match(holdingRtlState.heading ?? "", /[\u0600-\u06ff]/);
+  assert.match(holdingRtlState.currentSrc ?? "", /holding-network-/);
+  await mobile.screenshot({
+    path: path.join(artifactDirectory, "mobile-holding-network-ar.png"),
     fullPage: false,
   });
 
@@ -415,112 +840,144 @@ try {
     ),
     true,
   );
-  const reducedScene = await reducedMotion.evaluate(() => {
-    const scene = document.querySelector("[data-holding-scene]");
+  assert.equal(await reducedMotion.locator("canvas").count(), 0);
+  assert.equal(
+    await reducedMotion.locator("[data-rendered-scene] img").first().count(),
+    1,
+  );
+  assert.equal(
+    await reducedMotion
+      .locator("[data-interactive-scene]")
+      .first()
+      .locator('[class*="sceneDepth"]')
+      .evaluate((element) => getComputedStyle(element).transform),
+    "none",
+  );
+  const reducedMotionState = await reducedMotion.evaluate(() => {
+    const scene = document.querySelector("[data-interactive-scene]");
+    const loader = scene?.querySelector('[class*="sceneLoading"]');
     return {
-      canvasCount: scene?.querySelectorAll("canvas").length ?? 0,
-      fallbackCount:
-        scene?.querySelectorAll("[data-scene-fallback]").length ?? 0,
-      tier: scene?.getAttribute("data-render-tier"),
+      motion: document.documentElement.dataset.motion,
+      sceneAnimation: scene ? getComputedStyle(scene).animationName : null,
+      loaderDisplay: loader ? getComputedStyle(loader).display : null,
+      overlayControlCount: scene?.querySelectorAll("button").length,
     };
   });
-  assert.equal(reducedScene.tier, "0");
-  assert.equal(reducedScene.canvasCount, 0);
-  assert.equal(reducedScene.fallbackCount, 1);
-  await reducedMotion.locator('main a[href="#companies"]').click();
-  await reducedMotion.waitForTimeout(100);
+  assert.equal(reducedMotionState.motion, "reduced");
+  assert.equal(reducedMotionState.sceneAnimation, "none");
+  assert.equal(reducedMotionState.loaderDisplay, "none");
+  assert.equal(reducedMotionState.overlayControlCount, 0);
+
+  const noScript = await browser.newPage({
+    javaScriptEnabled: false,
+    viewport: { width: 1280, height: 900 },
+  });
+  await noScript.goto(`${baseUrl}/en/`, { waitUntil: "load" });
+  const noScriptState = await noScript.evaluate(() => ({
+    companyNames: Array.from(
+      document.querySelectorAll('#companies [class*="companyOption"] strong'),
+    ).map((element) => element.textContent?.trim()),
+    h1: document.querySelector("h1")?.textContent?.trim(),
+    imageCount: document.querySelectorAll("[data-rendered-scene] img").length,
+    mainTextLength: document.querySelector("main")?.textContent?.trim().length,
+  }));
+  assert.match(noScriptState.h1 ?? "", /One holding system/);
+  assert.deepEqual(noScriptState.companyNames, [
+    "JOLLAQ",
+    "Al Maria",
+    "SYNTHEX Industrial",
+    "SHAMCO LLC",
+  ]);
+  assert.ok((noScriptState.mainTextLength ?? 0) > 2000);
+  assert.ok(noScriptState.imageCount >= 7);
+
+  const constrained = await browser.newPage({
+    viewport: { width: 390, height: 844 },
+  });
+  await constrained.route("**/media/**", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await route.continue();
+  });
+  await constrained.goto(`${baseUrl}/en/`, {
+    waitUntil: "domcontentloaded",
+  });
+  const constrainedScene = constrained.locator("[data-interactive-scene]").first();
   assert.equal(
-    await reducedMotion.evaluate(() => window.location.hash),
-    "#companies",
+    await constrainedScene.getAttribute("data-scene-loaded"),
+    "false",
   );
+  assert.equal(
+    await constrainedScene
+      .locator('[class*="sceneLoading"]')
+      .evaluate((element) => getComputedStyle(element).opacity),
+    "1",
+  );
+  await constrainedScene.locator("img").waitFor({ state: "visible" });
+  await constrained.waitForFunction(
+    () =>
+      document
+        .querySelector("[data-interactive-scene]")
+        ?.getAttribute("data-scene-loaded") === "true",
+  );
+  assert.equal(await constrained.locator("canvas").count(), 0);
 
   const tablet = await browser.newPage({
     viewport: { width: 820, height: 1024 },
   });
-  await tablet.goto(`${baseUrl}/en/#overview`, {
-    waitUntil: "networkidle",
-  });
+  await tablet.goto(`${baseUrl}/en/#overview`, { waitUntil: "networkidle" });
   const tabletLayout = await tablet.evaluate(() => ({
-    viewportWidth: window.innerWidth,
-    documentWidth: document.documentElement.scrollWidth,
     columns: getComputedStyle(
-      document.querySelector('[class*="operatingGrid"]'),
+      document.querySelector('#overview [class*="holdingOverviewGrid"]'),
     ).gridTemplateColumns.split(" ").length,
+    documentWidth: document.documentElement.scrollWidth,
+    viewportWidth: window.innerWidth,
   }));
   assert.equal(tabletLayout.documentWidth, tabletLayout.viewportWidth);
-  assert.equal(tabletLayout.columns, 2);
-  await tablet.screenshot({
-    path: path.join(artifactDirectory, "tablet-overview.png"),
-    fullPage: false,
-  });
+  assert.equal(tabletLayout.columns, 1);
 
   const wide = await browser.newPage({
     viewport: { width: 1920, height: 1080 },
   });
   await wide.goto(`${baseUrl}/en/`, { waitUntil: "networkidle" });
   const wideLayout = await wide.evaluate(() => ({
-    viewportWidth: window.innerWidth,
     documentWidth: document.documentElement.scrollWidth,
     heroColumns: getComputedStyle(
       document.querySelector('[class*="heroGrid"]'),
     ).gridTemplateColumns.split(" ").length,
+    viewportWidth: window.innerWidth,
   }));
   assert.equal(wideLayout.documentWidth, wideLayout.viewportWidth);
   assert.equal(wideLayout.heroColumns, 2);
 
-  const noWebgl = await browser.newPage({
-    viewport: { width: 1280, height: 800 },
-  });
-  await noWebgl.addInitScript(() => {
-    const originalGetContext = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function getContext(
-      type,
-      ...args
-    ) {
-      if (
-        type === "webgl" ||
-        type === "webgl2" ||
-        type === "experimental-webgl"
-      ) {
-        return null;
-      }
-      return originalGetContext.call(this, type, ...args);
-    };
-  });
-  await noWebgl.goto(`${baseUrl}/en/`, { waitUntil: "networkidle" });
-  await noWebgl.waitForFunction(
-    () =>
-      document
-        .querySelector("[data-holding-scene]")
-        ?.getAttribute("data-webgl-status") === "unavailable",
-  );
-  const fallbackState = await noWebgl.evaluate(() => {
-    const scene = document.querySelector("[data-holding-scene]");
-    return {
-      canvasCount: scene?.querySelectorAll("canvas").length ?? 0,
-      fallbackCount:
-        scene?.querySelectorAll("[data-scene-fallback]").length ?? 0,
-      tier: scene?.getAttribute("data-render-tier"),
-      webgl: scene?.getAttribute("data-webgl-status"),
-    };
-  });
-  assert.deepEqual(fallbackState, {
-    canvasCount: 0,
-    fallbackCount: 1,
-    tier: "0",
-    webgl: "unavailable",
-  });
+  assert.deepEqual(desktopTracking.failedResponses, []);
+  assert.deepEqual(desktopTracking.errors, []);
+  assert.deepEqual(mobileTracking.failedResponses, []);
+  assert.deepEqual(mobileTracking.errors, []);
 
   console.log(
     JSON.stringify(
       {
-        directState,
-        fallbackState,
+        alMariaState,
+        accessibilityState,
         heroState,
-        mobileHero,
+        metadataState,
+        resourceState,
+        holdingOverviewState,
+        holdingRtlState,
+        jollaqState,
+        industrialInitial,
+        industrialRtlState,
+        mobileIndustrial,
+        mobileJollaq,
+        mobileShamco,
         mobileLayout,
-        reducedScene,
         rtlState,
+        networkState,
+        noScriptState,
+        contactState,
+        storyState,
+        shamcoInitial,
+        shamcoRtlState,
         tabletLayout,
         wideLayout,
         screenshots: artifactDirectory,

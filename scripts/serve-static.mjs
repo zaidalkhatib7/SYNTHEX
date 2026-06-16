@@ -11,6 +11,7 @@ const root = path.resolve(
 const port = Number(process.env.PORT ?? 3000);
 
 const contentTypes = {
+  ".avif": "image/avif",
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
   ".ico": "image/x-icon",

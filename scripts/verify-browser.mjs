@@ -200,6 +200,24 @@ try {
   assert.equal(interactionLayerState.ready, "ready");
   assert.equal(interactionLayerState.cursorCount, 1);
   assert.equal(interactionLayerState.railCount, 10);
+  const englishLocaleSwitch = desktop.locator("[data-native-cursor]").first();
+  const englishLocaleSwitchBounds = await englishLocaleSwitch.boundingBox();
+  assert.ok(englishLocaleSwitchBounds);
+  await desktop.mouse.move(
+    englishLocaleSwitchBounds.x + englishLocaleSwitchBounds.width * 0.5,
+    englishLocaleSwitchBounds.y + englishLocaleSwitchBounds.height * 0.5,
+  );
+  await desktop.waitForTimeout(180);
+  const englishLocaleCursorState = await desktop.evaluate(() => ({
+    cursorLabelOpacity: getComputedStyle(
+      document.querySelector('[class*="interactionCursorLabel"]'),
+    ).opacity,
+    cursorState: document.documentElement.dataset.cursorState,
+    label: document.querySelector("[data-native-cursor]")?.textContent?.trim(),
+  }));
+  assert.equal(englishLocaleCursorState.cursorState, "idle");
+  assert.equal(englishLocaleCursorState.cursorLabelOpacity, "0");
+  assert.equal(englishLocaleCursorState.label, "AR");
   const metadataState = await desktop.evaluate(() => {
     const schema = document.querySelector('script[type="application/ld+json"]');
     return {
@@ -404,6 +422,138 @@ try {
   assert.match(selectorInteractionState.transform, /perspective/);
   await desktop.screenshot({
     path: path.join(artifactDirectory, "desktop-company-selector.png"),
+    fullPage: false,
+  });
+
+  await desktop.goto(`${baseUrl}/ar/`, { waitUntil: "networkidle" });
+  await desktop.waitForFunction(
+    () => document.documentElement.dataset.synthexInteractions === "ready",
+  );
+  const arabicLocaleSwitch = desktop.locator("[data-native-cursor]").first();
+  const arabicLocaleSwitchBounds = await arabicLocaleSwitch.boundingBox();
+  assert.ok(arabicLocaleSwitchBounds);
+  await desktop.mouse.move(
+    arabicLocaleSwitchBounds.x + arabicLocaleSwitchBounds.width * 0.5,
+    arabicLocaleSwitchBounds.y + arabicLocaleSwitchBounds.height * 0.5,
+  );
+  await desktop.waitForTimeout(180);
+  const arabicLocaleCursorState = await desktop.evaluate(() => ({
+    cursorLabelOpacity: getComputedStyle(
+      document.querySelector('[class*="interactionCursorLabel"]'),
+    ).opacity,
+    cursorState: document.documentElement.dataset.cursorState,
+    label: document.querySelector("[data-native-cursor]")?.textContent?.trim(),
+  }));
+  assert.equal(arabicLocaleCursorState.cursorState, "idle");
+  assert.equal(arabicLocaleCursorState.cursorLabelOpacity, "0");
+  assert.equal(arabicLocaleCursorState.label, "EN");
+
+  const arabicHeroScene = desktop.locator("[data-interactive-scene]").first();
+  const arabicHeroBounds = await arabicHeroScene.boundingBox();
+  assert.ok(arabicHeroBounds);
+  await desktop.mouse.move(
+    arabicHeroBounds.x + arabicHeroBounds.width * 0.58,
+    arabicHeroBounds.y + arabicHeroBounds.height * 0.42,
+  );
+  await desktop.waitForTimeout(180);
+  const arabicHeroCursorState = await desktop.evaluate(() => {
+    const cursor = document.querySelector("[data-interaction-cursor]");
+    const label = document.querySelector('[class*="interactionCursorLabel"]');
+    const cursorBounds = cursor?.getBoundingClientRect();
+    return {
+      cursorLabelOpacity: label ? getComputedStyle(label).opacity : null,
+      cursorState: document.documentElement.dataset.cursorState,
+      cursorX: cursorBounds?.left,
+      label: label?.textContent?.trim(),
+    };
+  });
+  assert.equal(arabicHeroCursorState.cursorState, "scene");
+  assert.equal(arabicHeroCursorState.cursorLabelOpacity, "1");
+  assert.ok((arabicHeroCursorState.cursorX ?? 0) > 0);
+  assert.match(arabicHeroCursorState.label ?? "", /تركيز/);
+
+  await desktop.goto(`${baseUrl}/ar/#companies`, { waitUntil: "networkidle" });
+  await desktop.waitForFunction(
+    () => document.documentElement.dataset.synthexInteractions === "ready",
+  );
+  await desktop.locator("#companies").scrollIntoViewIfNeeded();
+  const arabicCompanyCard = desktop.locator('#companies a[href="#jollaq"]').first();
+  const arabicCompanyCardBounds = await arabicCompanyCard.boundingBox();
+  assert.ok(arabicCompanyCardBounds);
+  await desktop.mouse.move(
+    arabicCompanyCardBounds.x + arabicCompanyCardBounds.width * 0.45,
+    arabicCompanyCardBounds.y + arabicCompanyCardBounds.height * 0.48,
+  );
+  await desktop.waitForTimeout(180);
+  const arabicCompanyCursorState = await arabicCompanyCard.evaluate((card) => ({
+    active: card.getAttribute("data-depth-active"),
+    cursorLabelOpacity: getComputedStyle(
+      document.querySelector('[class*="interactionCursorLabel"]'),
+    ).opacity,
+    cursorState: document.documentElement.dataset.cursorState,
+    label: document
+      .querySelector('[class*="interactionCursorLabel"]')
+      ?.textContent?.trim(),
+    transform: card.style.transform,
+  }));
+  assert.equal(arabicCompanyCursorState.active, "true");
+  assert.equal(arabicCompanyCursorState.cursorState, "active");
+  assert.equal(arabicCompanyCursorState.cursorLabelOpacity, "1");
+  assert.match(arabicCompanyCursorState.label ?? "", /JOLLAQ/);
+  assert.match(arabicCompanyCursorState.transform, /perspective/);
+
+  await desktop.goto(`${baseUrl}/ar/`, { waitUntil: "networkidle" });
+  await desktop.waitForFunction(
+    () => document.documentElement.dataset.synthexInteractions === "ready",
+  );
+  const arabicRailState = await desktop.evaluate(() => {
+    const rail = document.querySelector("[data-interaction-layer] nav");
+    const activeRailLink = rail?.querySelector('[data-rail-link][data-active="true"]');
+    const activeRailLabel = activeRailLink?.querySelector("span");
+    const railRect = rail?.getBoundingClientRect();
+    const labelRect = activeRailLabel?.getBoundingClientRect();
+
+    return {
+      activeLabel: activeRailLabel?.textContent?.trim(),
+      dir: document.documentElement.dir,
+      labelLeft: labelRect?.left,
+      labelRight: labelRect?.right,
+      railLeft: railRect?.left,
+      railRight: railRect?.right,
+      viewportWidth: window.innerWidth,
+    };
+  });
+  assert.equal(arabicRailState.dir, "rtl");
+  assert.match(arabicRailState.activeLabel ?? "", /الرئيسية/);
+  assert.ok((arabicRailState.railRight ?? 0) > arabicRailState.viewportWidth - 40);
+  assert.ok((arabicRailState.railLeft ?? 0) > arabicRailState.viewportWidth - 90);
+  assert.ok((arabicRailState.labelRight ?? 0) < (arabicRailState.railLeft ?? 0));
+  assert.ok((arabicRailState.labelLeft ?? 0) > 0);
+
+  const arabicActiveRail = desktop
+    .locator('[data-interaction-layer] [data-rail-link][data-active="true"]')
+    .first();
+  const arabicActiveRailBounds = await arabicActiveRail.boundingBox();
+  assert.ok(arabicActiveRailBounds);
+  await desktop.mouse.move(
+    arabicActiveRailBounds.x + arabicActiveRailBounds.width * 0.5,
+    arabicActiveRailBounds.y + arabicActiveRailBounds.height * 0.5,
+  );
+  await desktop.waitForTimeout(180);
+  const arabicRailHoverState = await desktop.evaluate(() => ({
+    cursorLabelOpacity: getComputedStyle(
+      document.querySelector('[class*="interactionCursorLabel"]'),
+    ).opacity,
+    cursorState: document.documentElement.dataset.cursorState,
+    railLabel: document
+      .querySelector('[data-interaction-layer] [data-rail-link][data-active="true"] span')
+      ?.textContent?.trim(),
+  }));
+  assert.equal(arabicRailHoverState.cursorState, "idle");
+  assert.equal(arabicRailHoverState.cursorLabelOpacity, "0");
+  assert.match(arabicRailHoverState.railLabel ?? "", /الرئيسية/);
+  await desktop.screenshot({
+    path: path.join(artifactDirectory, "desktop-arabic-rail.png"),
     fullPage: false,
   });
 
@@ -1064,7 +1214,13 @@ try {
     JSON.stringify(
       {
         alMariaState,
+        arabicCompanyCursorState,
+        arabicHeroCursorState,
+        arabicLocaleCursorState,
+        arabicRailHoverState,
+        arabicRailState,
         accessibilityState,
+        englishLocaleCursorState,
         heroState,
         metadataState,
         resourceState,

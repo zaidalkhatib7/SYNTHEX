@@ -454,6 +454,7 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
 
           <Link
             className={styles.localeLink}
+            data-native-cursor
             href={localeHref}
             hrefLang={otherLocale(locale)}
             onClick={handleLocaleClick}

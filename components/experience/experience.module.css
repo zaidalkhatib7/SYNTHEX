@@ -4451,8 +4451,10 @@
 
 .interactionCursor {
   position: fixed;
-  inset-block-start: 0;
-  inset-inline-start: 0;
+  top: 0;
+  right: auto;
+  bottom: auto;
+  left: 0;
   z-index: 190;
   width: 0;
   height: 0;
@@ -4465,8 +4467,10 @@
 
 .interactionCursorCore {
   position: absolute;
-  inset-block-start: 0;
-  inset-inline-start: 0;
+  top: 0;
+  right: auto;
+  bottom: auto;
+  left: 0;
   width: 0.86rem;
   height: 0.86rem;
   border: 1px solid currentColor;
@@ -4487,8 +4491,9 @@
 
 .interactionCursorLabel {
   position: absolute;
-  inset-block-start: 0.72rem;
-  inset-inline-start: 1.05rem;
+  top: 0.72rem;
+  right: auto;
+  left: 1.05rem;
   width: max-content;
   max-width: 11rem;
   padding: 0.42rem 0.62rem;
@@ -4505,6 +4510,13 @@
   transition:
     opacity 180ms var(--ease-standard),
     transform 180ms var(--ease-standard);
+}
+
+[dir="rtl"] .interactionCursorLabel {
+  direction: rtl;
+  font-family: inherit;
+  text-align: right;
+  text-transform: none;
 }
 
 :global(html[data-synthex-interactions="ready"][data-cursor-state]) .interactionCursor {
@@ -4538,7 +4550,8 @@
 .scrollProgressRail {
   position: fixed;
   inset-block: clamp(8rem, 16vh, 12rem) clamp(4rem, 9vh, 7rem);
-  inset-inline-end: clamp(0.85rem, 1.9vw, 1.7rem);
+  right: clamp(0.85rem, 1.9vw, 1.7rem);
+  left: auto;
   z-index: 140;
   display: grid;
   align-content: space-between;
@@ -4598,7 +4611,8 @@
 
 .railLink span {
   position: absolute;
-  inset-inline-end: calc(100% + 0.62rem);
+  right: calc(100% + 0.62rem);
+  left: auto;
   width: max-content;
   max-width: 11rem;
   padding: 0.42rem 0.62rem;
@@ -4619,6 +4633,10 @@
 }
 
 [dir="rtl"] .railLink span {
+  direction: rtl;
+  font-family: inherit;
+  text-align: right;
+  text-transform: none;
   transform: translateX(-0.35rem);
 }
 

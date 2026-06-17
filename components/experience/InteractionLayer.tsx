@@ -253,6 +253,11 @@ export function InteractionLayer({ locale }: { locale: Locale }) {
         return;
       }
 
+      if (target.closest("[data-native-cursor], [data-rail-link]")) {
+        root.dataset.cursorState = "idle";
+        return;
+      }
+
       const scene = target.closest<HTMLElement>("[data-rendered-scene]");
       const depthTarget = target.closest<HTMLElement>("[data-depth-card]");
       const control = target.closest<HTMLElement>("a, button");
@@ -424,6 +429,7 @@ export function InteractionLayer({ locale }: { locale: Locale }) {
             aria-current={activeSection === section.id ? "true" : undefined}
             className={styles.railLink}
             data-active={activeSection === section.id ? "true" : undefined}
+            data-rail-link
             href={`#${section.id}`}
             key={section.id}
           >

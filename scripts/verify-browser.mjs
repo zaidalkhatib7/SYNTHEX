@@ -163,6 +163,9 @@ try {
   const desktopTracking = trackPage(desktop);
 
   await desktop.goto(`${baseUrl}/en/`, { waitUntil: "networkidle" });
+  await desktop.waitForFunction(
+    () => document.documentElement.dataset.synthexInteractions === "ready",
+  );
   const heroState = await desktop.evaluate(() => {
     const figure = document.querySelector("[data-rendered-scene]");
     const image = figure?.querySelector("img");
@@ -174,6 +177,8 @@ try {
       naturalWidth: image?.naturalWidth,
       navbarCompany: document.querySelector("header")?.getAttribute("data-company"),
       sourceCount: figure?.querySelectorAll("source").length,
+      sceneRole: figure?.getAttribute("role"),
+      sceneTabIndex: figure?.getAttribute("tabindex"),
     };
   });
   assert.equal(heroState.canvasCount, 0);
@@ -183,6 +188,18 @@ try {
   assert.equal(heroState.navbarCompany, "holding");
   assert.ok((heroState.naturalWidth ?? 0) >= 640);
   assert.equal(heroState.sourceCount, 2);
+  assert.equal(heroState.sceneRole, "button");
+  assert.equal(heroState.sceneTabIndex, "0");
+  const interactionLayerState = await desktop.evaluate(() => ({
+    cursorCount: document.querySelectorAll("[data-interaction-cursor]").length,
+    railCount: document.querySelectorAll(
+      '[data-interaction-layer] nav a[href^="#"]',
+    ).length,
+    ready: document.documentElement.dataset.synthexInteractions,
+  }));
+  assert.equal(interactionLayerState.ready, "ready");
+  assert.equal(interactionLayerState.cursorCount, 1);
+  assert.equal(interactionLayerState.railCount, 10);
   const metadataState = await desktop.evaluate(() => {
     const schema = document.querySelector('script[type="application/ld+json"]');
     return {
@@ -282,6 +299,80 @@ try {
   assert.notEqual(heroInteraction.rotateY, "0deg");
   assert.equal(heroInteraction.captionCount, 0);
   assert.equal(heroInteraction.overlayControlCount, 0);
+  const heroCursorState = await desktop.evaluate(() => ({
+    cursorState: document.documentElement.dataset.cursorState,
+    label: document.querySelector('[class*="interactionCursorLabel"]')
+      ?.textContent,
+  }));
+  assert.equal(heroCursorState.cursorState, "scene");
+  assert.match(heroCursorState.label ?? "", /Focus scene/);
+  await heroScene.click({
+    position: {
+      x: heroBounds.width * 0.5,
+      y: heroBounds.height * 0.5,
+    },
+  });
+  await desktop.waitForFunction(
+    () => document.documentElement.dataset.synthexSceneExpanded === "true",
+  );
+  await desktop.waitForFunction(() => {
+    const panel = document.querySelector("[data-focused-scene-panel]");
+    const bounds = panel?.getBoundingClientRect();
+    return (
+      bounds &&
+      bounds.height > window.innerHeight * 0.75 &&
+      getComputedStyle(panel).opacity === "1"
+    );
+  });
+  const focusedSceneState = await desktop.evaluate(() => ({
+    backOpacity: getComputedStyle(
+      document.querySelector('[class*="sceneBackButton"]'),
+    ).opacity,
+    dialogRole: document
+      .querySelector("[data-focused-scene-panel]")
+      ?.getAttribute("role"),
+    expanded: document
+      .querySelector("[data-rendered-scene]")
+      ?.getAttribute("data-scene-expanded"),
+    focusedImageSrc: document
+      .querySelector("[data-focused-scene-panel] img")
+      ?.getAttribute("src"),
+    height: document
+      .querySelector("[data-focused-scene-panel]")
+      ?.getBoundingClientRect().height,
+    originalRole: document
+      .querySelector("[data-rendered-scene]")
+      ?.getAttribute("role"),
+    rootExpanded: document.documentElement.dataset.synthexSceneExpanded,
+  }));
+  assert.equal(focusedSceneState.expanded, "true");
+  assert.ok((focusedSceneState.height ?? 0) > 750);
+  assert.equal(focusedSceneState.backOpacity, "1");
+  assert.equal(focusedSceneState.dialogRole, "dialog");
+  assert.match(focusedSceneState.focusedImageSrc ?? "", /synthex-holding-/);
+  assert.equal(focusedSceneState.originalRole, "button");
+  assert.equal(focusedSceneState.rootExpanded, "true");
+  await desktop.screenshot({
+    path: path.join(artifactDirectory, "desktop-focused-scene.png"),
+    fullPage: false,
+  });
+  await desktop.keyboard.press("Escape");
+  await desktop.waitForFunction(
+    () => document.documentElement.dataset.synthexSceneExpanded !== "true",
+  );
+  await desktop.waitForFunction(
+    () => {
+      const button = document.querySelector('[class*="sceneBackButton"]');
+      return button && getComputedStyle(button).opacity === "0";
+    },
+  );
+  assert.equal(
+    await desktop
+      .locator("[data-rendered-scene]")
+      .first()
+      .evaluate((scene) => scene.getAttribute("role")),
+    "button",
+  );
   await desktop.evaluate(() => {
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
@@ -296,6 +387,21 @@ try {
     waitUntil: "networkidle",
   });
   await desktop.locator("#companies").scrollIntoViewIfNeeded();
+  const companyCard = desktop.locator('#companies a[href="#jollaq"]').first();
+  const companyCardBounds = await companyCard.boundingBox();
+  assert.ok(companyCardBounds);
+  await desktop.mouse.move(
+    companyCardBounds.x + companyCardBounds.width * 0.7,
+    companyCardBounds.y + companyCardBounds.height * 0.35,
+  );
+  const selectorInteractionState = await companyCard.evaluate((card) => ({
+    active: card.getAttribute("data-depth-active"),
+    label: card.getAttribute("data-cursor-label"),
+    transform: card.style.transform,
+  }));
+  assert.equal(selectorInteractionState.active, "true");
+  assert.match(selectorInteractionState.label ?? "", /JOLLAQ/);
+  assert.match(selectorInteractionState.transform, /perspective/);
   await desktop.screenshot({
     path: path.join(artifactDirectory, "desktop-company-selector.png"),
     fullPage: false,

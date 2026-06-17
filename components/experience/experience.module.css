@@ -4439,3 +4439,430 @@
     border-radius: 1.35rem;
   }
 }
+
+/* Interaction pass: Lando-style scroll drive, magnetic surfaces, and scene focus. */
+
+.interactionLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  pointer-events: none;
+}
+
+.interactionCursor {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 190;
+  width: 0;
+  height: 0;
+  color: var(--color-accent);
+  opacity: 0;
+  transform: translate3d(-120px, -120px, 0);
+  transition: opacity 160ms var(--ease-standard);
+  will-change: transform;
+}
+
+.interactionCursorCore {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  width: 0.86rem;
+  height: 0.86rem;
+  border: 1px solid currentColor;
+  border-radius: 999rem;
+  background:
+    radial-gradient(circle, color-mix(in srgb, currentColor 48%, transparent), transparent 68%),
+    rgba(6, 14, 20, 0.64);
+  box-shadow:
+    0 0 1.8rem color-mix(in srgb, currentColor 55%, transparent),
+    0 0 0 0.42rem color-mix(in srgb, currentColor 10%, transparent);
+  transform: translate(-50%, -50%);
+  transition:
+    width 220ms var(--ease-standard),
+    height 220ms var(--ease-standard),
+    background 220ms var(--ease-standard),
+    box-shadow 220ms var(--ease-standard);
+}
+
+.interactionCursorLabel {
+  position: absolute;
+  inset-block-start: 0.72rem;
+  inset-inline-start: 1.05rem;
+  width: max-content;
+  max-width: 11rem;
+  padding: 0.42rem 0.62rem;
+  border: 1px solid color-mix(in srgb, currentColor 42%, transparent);
+  border-radius: 999rem;
+  color: rgba(245, 251, 253, 0.9);
+  background: rgba(3, 10, 15, 0.74);
+  box-shadow: 0 0.9rem 2rem rgba(0, 0, 0, 0.28);
+  font: 700 0.58rem/1.1 ui-monospace, SFMono-Regular, Consolas, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(0.28rem);
+  transition:
+    opacity 180ms var(--ease-standard),
+    transform 180ms var(--ease-standard);
+}
+
+:global(html[data-synthex-interactions="ready"][data-cursor-state]) .interactionCursor {
+  opacity: 1;
+}
+
+:global(html[data-cursor-state="active"]) .interactionCursorCore,
+:global(html[data-cursor-state="scene"]) .interactionCursorCore {
+  width: 2.15rem;
+  height: 2.15rem;
+  background:
+    radial-gradient(circle, color-mix(in srgb, currentColor 26%, transparent), transparent 70%),
+    rgba(6, 14, 20, 0.38);
+}
+
+:global(html[data-cursor-state="active"]) .interactionCursorLabel,
+:global(html[data-cursor-state="scene"]) .interactionCursorLabel {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+:global(html[data-cursor-state="scene"]) .interactionCursorCore {
+  width: 3.2rem;
+  height: 3.2rem;
+  color: var(--synthex-orange);
+  box-shadow:
+    0 0 2.4rem rgba(247, 148, 29, 0.48),
+    0 0 0 0.62rem rgba(247, 148, 29, 0.08);
+}
+
+.scrollProgressRail {
+  position: fixed;
+  inset-block: clamp(8rem, 16vh, 12rem) clamp(4rem, 9vh, 7rem);
+  inset-inline-end: clamp(0.85rem, 1.9vw, 1.7rem);
+  z-index: 140;
+  display: grid;
+  align-content: space-between;
+  gap: 0.28rem;
+  width: 2.9rem;
+  padding: 0.65rem 0;
+  pointer-events: auto;
+}
+
+.scrollProgressTrack {
+  position: absolute;
+  inset-block: 0;
+  inset-inline: 50% auto;
+  width: 1px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateX(-50%);
+}
+
+.scrollProgressTrack::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  height: calc(var(--synthex-scroll-progress, 0) * 100%);
+  background:
+    linear-gradient(180deg, var(--synthex-cyan), var(--synthex-orange));
+  box-shadow: 0 0 1.3rem rgba(19, 183, 198, 0.5);
+}
+
+.railLink {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.9rem;
+  height: 1.7rem;
+  color: rgba(236, 248, 251, 0.62);
+  text-decoration: none;
+  outline: none;
+}
+
+.railLink::before {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border: 1px solid currentColor;
+  border-radius: 999rem;
+  background: rgba(4, 13, 20, 0.82);
+  box-shadow: 0 0 0 0 rgba(19, 183, 198, 0);
+  transition:
+    width 190ms var(--ease-standard),
+    height 190ms var(--ease-standard),
+    background 190ms var(--ease-standard),
+    color 190ms var(--ease-standard),
+    box-shadow 190ms var(--ease-standard);
+}
+
+.railLink span {
+  position: absolute;
+  inset-inline-end: calc(100% + 0.62rem);
+  width: max-content;
+  max-width: 11rem;
+  padding: 0.42rem 0.62rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999rem;
+  color: rgba(245, 251, 253, 0.84);
+  background: rgba(4, 12, 18, 0.76);
+  box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.3);
+  font: 700 0.58rem/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateX(0.35rem);
+  transition:
+    opacity 180ms var(--ease-standard),
+    transform 180ms var(--ease-standard);
+  white-space: nowrap;
+}
+
+[dir="rtl"] .railLink span {
+  transform: translateX(-0.35rem);
+}
+
+.railLink:hover,
+.railLink:focus-visible,
+.railLink[data-active="true"] {
+  color: var(--color-accent);
+}
+
+.railLink:hover::before,
+.railLink:focus-visible::before,
+.railLink[data-active="true"]::before {
+  width: 0.92rem;
+  height: 0.92rem;
+  background: currentColor;
+  box-shadow:
+    0 0 1.6rem color-mix(in srgb, currentColor 52%, transparent),
+    0 0 0 0.34rem color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.railLink:hover span,
+.railLink:focus-visible span,
+.railLink[data-active="true"] span {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.verticalDriveHint {
+  position: fixed;
+  inset-block-end: clamp(1.05rem, 2vw, 1.7rem);
+  inset-inline-start: clamp(1.05rem, 2vw, 1.7rem);
+  z-index: 140;
+  max-width: 19rem;
+  margin: 0;
+  padding: 0.55rem 0.76rem;
+  border: 1px solid rgba(19, 183, 198, 0.26);
+  border-radius: 999rem;
+  color: rgba(229, 242, 247, 0.72);
+  background: rgba(4, 12, 18, 0.58);
+  box-shadow: 0 1.2rem 2.6rem rgba(0, 0, 0, 0.24);
+  font: 700 0.58rem/1.2 ui-monospace, SFMono-Regular, Consolas, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: translateY(calc(var(--synthex-scroll-progress, 0) * 1.8rem));
+  transition:
+    border-color 220ms var(--ease-standard),
+    color 220ms var(--ease-standard),
+    background 220ms var(--ease-standard);
+}
+
+:global(html[data-scroll-direction="down"]) .verticalDriveHint {
+  color: rgba(245, 251, 253, 0.34);
+  background: rgba(4, 12, 18, 0.28);
+}
+
+.focusedScenePanel {
+  --scene-focus-gap: clamp(2rem, 5.6vw, 4.4rem);
+  position: fixed;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  z-index: 170;
+  display: grid;
+  place-items: center;
+  width: min(calc(100vw - var(--scene-focus-gap)), 68rem);
+  height: calc(100svh - var(--scene-focus-gap));
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgba(121, 228, 238, 0.62);
+  border-radius: clamp(1.1rem, 2.4vw, 2rem);
+  background:
+    radial-gradient(circle at 50% 34%, rgba(19, 183, 198, 0.16), transparent 25rem),
+    #02080d;
+  box-shadow:
+    0 3rem 8rem rgba(0, 0, 0, 0.62),
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 4.5rem rgba(19, 183, 198, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.focusedScenePanel::before {
+  content: "";
+  position: absolute;
+  inset: 1rem;
+  z-index: 2;
+  pointer-events: none;
+  border: 1px solid rgba(121, 228, 238, 0.24);
+  border-radius: inherit;
+}
+
+.focusedScenePanel img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  transform: scale(1.01);
+}
+
+.focusedScenePanel[data-active="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  animation: focusedSceneArrival 360ms var(--ease-standard) both;
+}
+
+:global([data-depth-card]) {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+:global([data-depth-card])::after {
+  pointer-events: none;
+}
+
+:global([data-depth-card][data-depth-active="true"]) {
+  border-color: color-mix(in srgb, var(--color-accent) 42%, rgba(255, 255, 255, 0.22)) !important;
+  box-shadow:
+    0 2rem 4.5rem rgba(0, 0, 0, 0.18),
+    0 0 2.4rem color-mix(in srgb, var(--color-accent) 10%, transparent) !important;
+}
+
+:global([data-depth-card][data-depth-active="true"])::before {
+  background:
+    radial-gradient(
+      circle at var(--depth-light-x, 50%) var(--depth-light-y, 50%),
+      color-mix(in srgb, var(--color-accent) 18%, transparent),
+      transparent 36%
+    );
+}
+
+.sceneFocusScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  border: 0;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(19, 183, 198, 0.12), transparent 34rem),
+    rgba(0, 4, 8, 0.74);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms var(--ease-standard);
+}
+
+:global(html[data-synthex-scene-expanded="true"]) .sceneFocusScrim {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sceneBackButton {
+  position: fixed;
+  inset-block-start: clamp(1rem, 2.2vw, 1.6rem);
+  inset-inline-end: clamp(1rem, 2.2vw, 1.6rem);
+  z-index: 190;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(247, 148, 29, 0.48);
+  border-radius: 999rem;
+  color: #fff6e6;
+  background:
+    linear-gradient(135deg, rgba(247, 148, 29, 0.28), rgba(19, 183, 198, 0.1)),
+    rgba(6, 14, 20, 0.76);
+  box-shadow:
+    0 1.1rem 2.7rem rgba(0, 0, 0, 0.34),
+    0 0 2rem rgba(247, 148, 29, 0.22);
+  font: 800 0.68rem/1 ui-monospace, SFMono-Regular, Consolas, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.45rem);
+  transition:
+    opacity 180ms var(--ease-standard),
+    transform 180ms var(--ease-standard);
+}
+
+:global(html[data-synthex-scene-expanded="true"]) .sceneBackButton {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+:global([data-rendered-scene]) {
+  cursor: pointer;
+}
+
+:global([data-rendered-scene]:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 0.36rem;
+}
+
+:global([data-rendered-scene][data-scene-expanded="true"]) {
+  cursor: grab;
+}
+
+:global(html[data-synthex-scene-expanded="true"] body) {
+  overflow: hidden;
+}
+
+@keyframes focusedSceneArrival {
+  from {
+    opacity: 0.55;
+    clip-path: inset(8% round 2rem);
+  }
+
+  to {
+    opacity: 1;
+    clip-path: inset(0 round clamp(1.1rem, 2.4vw, 2rem));
+  }
+}
+
+@media (pointer: coarse), (max-width: 64rem) {
+  .interactionCursor,
+  .scrollProgressRail,
+  .verticalDriveHint {
+    display: none;
+  }
+
+  :global([data-depth-card][data-depth-active="true"]) {
+    transform: none !important;
+  }
+
+  .focusedScenePanel {
+    --scene-focus-gap: 1.5rem;
+    width: calc(100vw - var(--scene-focus-gap)) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interactionCursor {
+    display: none;
+  }
+
+  .verticalDriveHint {
+    transform: none;
+  }
+
+  :global([data-depth-card]) {
+    transform: none !important;
+  }
+
+  .focusedScenePanel[data-active="true"] {
+    animation: none !important;
+  }
+
+  .focusedScenePanel img {
+    transform: none !important;
+  }
+}

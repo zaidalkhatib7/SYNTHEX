@@ -31,10 +31,9 @@ export function ResponsiveSceneImage({
   className,
   eager = false,
   hotspots: _hotspots,
-  label: _label,
+  label,
 }: ResponsiveSceneImageProps) {
   void _hotspots;
-  void _label;
 
   const sceneRef = useRef<HTMLElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -150,12 +149,16 @@ export function ResponsiveSceneImage({
   return (
     <figure
       ref={sceneRef}
+      aria-label={label}
       className={`${styles.renderedScene} ${className}`}
+      data-cursor-label={label}
       data-interactive-scene
       data-rendered-scene
       data-scene-loaded={loaded}
       onPointerLeave={resetDepth}
       onPointerMove={updateDepth}
+      role="button"
+      tabIndex={0}
     >
       <div className={styles.sceneDepth}>
         <picture>

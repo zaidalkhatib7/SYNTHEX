@@ -41,6 +41,7 @@ import {
   HoldingStory,
 } from "./HoldingSections";
 import { IndustrialWorld } from "./IndustrialWorld";
+import { InteractionLayer } from "./InteractionLayer";
 import { JollaqWorld } from "./JollaqWorld";
 import { ResponsiveSceneImage } from "./ResponsiveSceneImage";
 import { ScenePlaceholder } from "./ScenePlaceholder";
@@ -847,6 +848,7 @@ export function ExperiencePage({ locale }: ExperiencePageProps) {
       </main>
 
       <HoldingFooter locale={locale} />
+      <InteractionLayer locale={locale} />
       <footer hidden className={styles.footer} id="footer-legacy">
         <strong>{text.holdingName}</strong>
         <p>
